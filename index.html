@@ -8,20 +8,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CantiereSafe">
   <meta name="description" content="PWA professionale per sopralluoghi RSPP in cantiere">
-
   <title>CantiereSafe — RSPP Sopralluoghi</title>
-
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
-
-  <!-- Dexie (IndexedDB wrapper) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js"></script>
-  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<!-- ═══ HEADER ═══ -->
 <header class="app-header">
   <div class="app-logo">
     <span class="icon">🦺</span>
@@ -33,10 +27,9 @@
   <div class="header-badge">D.Lgs 81/08</div>
 </header>
 
-<!-- ═══ MAIN ═══ -->
 <main class="main-content">
 
-  <!-- ── VIEW: HOME ── -->
+  <!-- HOME -->
   <div class="view active" id="view-home">
     <div class="status-bar">
       <span class="status-dot" id="status-dot"></span>
@@ -47,12 +40,11 @@
     <div id="sopr-list"></div>
   </div>
 
-  <!-- ── VIEW: NUOVO SOPRALLUOGO ── -->
+  <!-- NUOVO SOPRALLUOGO -->
   <div class="view" id="view-nuovo">
     <div class="section-title">Nuovo Sopralluogo</div>
     <div class="section-sub">Compila tutti i campi disponibili</div>
 
-    <!-- DATI PRINCIPALI -->
     <div class="card">
       <div class="card-title"><span>🏗</span> Dati Cantiere</div>
 
@@ -62,12 +54,21 @@
       </div>
 
       <div class="form-group">
+        <label class="form-label" for="f-luogo">Tipo di Luogo</label>
+        <select class="form-select" id="f-luogo">
+          <option value="cantiere">🏗 Cantiere</option>
+          <option value="azienda">🏢 Azienda</option>
+          <option value="edificio">🏠 Edificio</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label class="form-label" for="f-cantiere">Nome Cantiere / Opera</label>
         <input class="form-input" id="f-cantiere" type="text" placeholder="Es. Palazzina Residenziale Via Roma">
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="f-indirizzo">Indirizzo Cantiere</label>
+        <label class="form-label" for="f-indirizzo">Indirizzo</label>
         <input class="form-input" id="f-indirizzo" type="text" placeholder="Via, Città, CAP">
       </div>
 
@@ -80,15 +81,6 @@
           <label class="form-label" for="f-rspp">RSPP / Ispettore</label>
           <input class="form-input" id="f-rspp" type="text" placeholder="Nome cognome">
         </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="f-rischioGenerale">Livello di Rischio Generale</label>
-        <select class="form-select" id="f-rischioGenerale">
-          <option value="basso">🟢 Basso</option>
-          <option value="medio" selected>🟡 Medio</option>
-          <option value="alto">🔴 Alto</option>
-        </select>
       </div>
     </div>
 
@@ -108,26 +100,34 @@
       </div>
     </div>
 
-    <!-- FOTO -->
+    <!-- FOTO GENERALI -->
     <div class="card">
-      <div class="card-title"><span>📷</span> Documentazione Fotografica</div>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" multiple style="display:none">
-      <div class="photo-grid" id="photo-grid">
-        <!-- populated by JS -->
-      </div>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Tocca 📷 per scattare o scegliere foto dalla galleria</p>
+      <div class="card-title"><span>📷</span> Documentazione Fotografica Generale</div>
+      <input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+      <div class="photo-grid" id="photo-grid"></div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Tocca 📷 per scegliere foto dalla galleria</p>
     </div>
 
     <!-- CHECKLIST -->
     <div class="card">
       <div class="card-title"><span>✅</span> Checklist Sicurezza</div>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Seleziona SI / NO / N.A. per ogni punto di controllo</p>
-      <div id="checklist-container">
-        <!-- populated by JS -->
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">SI = Conforme / NO = Non Conforme / N.A. = Non Applicabile</p>
+      <div id="checklist-container"></div>
+    </div>
+
+    <!-- RISCHIO GENERALE — in fondo -->
+    <div class="card">
+      <div class="card-title"><span>⚠️</span> Valutazione Finale</div>
+      <div class="form-group">
+        <label class="form-label" for="f-rischioGenerale">Livello di Rischio Generale</label>
+        <select class="form-select" id="f-rischioGenerale">
+          <option value="basso">🟢 Basso</option>
+          <option value="medio" selected>🟡 Medio</option>
+          <option value="alto">🔴 Alto</option>
+        </select>
       </div>
     </div>
 
-    <!-- AZIONI -->
     <button class="btn btn-primary" onclick="saveSopralluogo()" style="margin-bottom:8px">
       💾 Salva Sopralluogo
     </button>
@@ -136,38 +136,33 @@
     </button>
   </div>
 
-  <!-- ── VIEW: DETTAGLIO ── -->
+  <!-- DETTAGLIO -->
   <div class="view" id="view-detail">
-    <div id="detail-content"><!-- populated by JS --></div>
+    <div id="detail-content"></div>
   </div>
 
-  <!-- ── VIEW: EXPORT ── -->
+  <!-- EXPORT -->
   <div class="view" id="view-export">
     <div class="section-title">Esporta Report</div>
     <div class="section-sub">Scegli il formato di esportazione</div>
-
     <div class="card">
-      <div class="card-title"><span>📤</span> Seleziona un Sopralluogo</div>
+      <div class="card-title"><span>📋</span> Seleziona Sopralluogo</div>
       <select class="form-select" id="export-select" onchange="exportTargetId = this.value ? parseInt(this.value) : null">
         <option value="">— Scegli sopralluogo —</option>
       </select>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:6px;">
-        Oppure apri un sopralluogo e usa il pulsante "Esporta Report"
-      </p>
     </div>
-
     <div class="card">
       <div class="card-title"><span>📑</span> Formato Export</div>
       <div class="export-grid">
         <div class="export-btn" onclick="exportPDF()">
           <span class="export-icon">📄</span>
           <span class="export-label">PDF</span>
-          <span style="font-size:11px;color:var(--text-muted)">Stile professionale</span>
+          <span style="font-size:11px;color:var(--text-muted)">Professionale</span>
         </div>
         <div class="export-btn" onclick="exportDOC()">
           <span class="export-icon">📝</span>
           <span class="export-label">.DOC</span>
-          <span style="font-size:11px;color:var(--text-muted)">Editabile in Word</span>
+          <span style="font-size:11px;color:var(--text-muted)">Editabile Word</span>
         </div>
         <div class="export-btn" onclick="exportTXT()">
           <span class="export-icon">📋</span>
@@ -183,11 +178,10 @@
     </div>
   </div>
 
-  <!-- ── VIEW: IMPOSTAZIONI ── -->
+  <!-- IMPOSTAZIONI -->
   <div class="view" id="view-settings">
     <div class="section-title">Impostazioni</div>
     <div class="section-sub">Gestione app e dati locali</div>
-
     <div class="card">
       <div class="card-title"><span>ℹ️</span> Info App</div>
       <p style="font-size:14px;margin-bottom:6px;"><strong>CantiereSafe</strong> v1.2.0</p>
@@ -195,37 +189,22 @@
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">D.Lgs. 81/2008 — Sicurezza sul Lavoro</p>
       <hr class="divider">
       <p style="font-size:13px;color:var(--text-secondary);">Sopralluoghi salvati: <strong id="settings-count">—</strong></p>
-      <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Dati salvati localmente sul dispositivo tramite IndexedDB</p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:4px;">Dati salvati localmente tramite IndexedDB</p>
     </div>
-
     <div class="card">
-      <div class="card-title"><span>📲</span> Installa App</div>
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        Installa CantiereSafe come app sul tuo dispositivo per usarla offline senza browser.
-      </p>
-      <button class="btn btn-ghost" id="install-btn" style="display:none" onclick="installPWA()">
-        📲 Installa su dispositivo
-      </button>
-      <p style="font-size:12px;color:var(--text-muted);" id="install-hint">
-        Per installare: usa il menu del browser → "Aggiungi alla schermata Home"
-      </p>
-    </div>
-
-    <div class="card">
-      <div class="card-title"><span>⚙️</span> Librerie</div>
+      <div class="card-title"><span>📦</span> Librerie</div>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.8">
-        📦 <strong>Dexie.js 3.2</strong> — IndexedDB wrapper<br>
-        📄 <strong>jsPDF 2.5</strong> — Generazione PDF<br>
-        🌐 <strong>Web Speech API</strong> — Dettatura vocale<br>
-        ⚡ <strong>Service Worker</strong> — Caching offline<br>
-        📱 <strong>Web App Manifest</strong> — Installabilità PWA
+        📦 Dexie.js 3.2 — IndexedDB wrapper<br>
+        📄 jsPDF 2.5 — Generazione PDF<br>
+        🌐 Web Speech API — Dettatura vocale<br>
+        ⚡ Service Worker — Caching offline<br>
+        📱 Web App Manifest — Installabilità PWA
       </p>
     </div>
-
-    <div class="card" style="border-color: #7f1d1d55">
+    <div class="card" style="border-color:#7f1d1d55">
       <div class="card-title" style="color:var(--accent-hot)"><span>⚠️</span> Zona Pericolo</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
-        Elimina tutti i dati salvati sul dispositivo. Questa operazione è irreversibile.
+        Elimina tutti i dati salvati. Operazione irreversibile.
       </p>
       <button class="btn btn-danger" onclick="clearAllData()">
         🗑 Elimina tutti i dati
@@ -235,7 +214,7 @@
 
 </main>
 
-<!-- ═══ BOTTOM NAV ═══ -->
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <button class="nav-btn active" data-view="home">
     <span class="nav-icon">🏠</span>
@@ -255,67 +234,44 @@
   </button>
 </nav>
 
-<!-- ═══ LIGHTBOX ═══ -->
+<!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightbox-close">✕</button>
   <img id="lightbox-img" src="" alt="Foto sopralluogo">
 </div>
 
-<!-- ═══ TOAST ═══ -->
+<!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
-<!-- ═══ PWA INSTALL ═══ -->
 <script>
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  const btn = document.getElementById('install-btn');
-  const hint = document.getElementById('install-hint');
-  if (btn) { btn.style.display = 'flex'; }
-  if (hint) { hint.style.display = 'none'; }
 });
 
-async function installPWA() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  if (outcome === 'accepted') toast('App installata! ✓', 'success');
-  deferredInstallPrompt = null;
-}
-
-// Populate export select
-async function populateExportSelect() {
-  const sel = document.getElementById('export-select');
-  if (!sel) return;
-  const all = await db.sopralluoghi.orderBy('createdAt').reverse().toArray();
-  sel.innerHTML = '<option value="">— Scegli sopralluogo —</option>' +
-    all.map(s => `<option value="${s.id}">${s.azienda || 'N/D'} — ${s.data || ''}</option>`).join('');
-}
-
-// Export all sopralluoghi as TXT backup
 async function exportAllTXT() {
   const all = await db.sopralluoghi.orderBy('createdAt').toArray();
   if (!all.length) { toast('Nessun dato da esportare', 'error'); return; }
   let txt = `BACKUP COMPLETO CANTIERE SAFE\nEsportato il ${new Date().toLocaleString('it-IT')}\n${'='.repeat(55)}\n\n`;
   all.forEach((s, i) => {
-    txt += `SOPRALLUOGO ${i+1}: ${s.azienda || 'N/D'} — ${s.data || 'N/D'}\n`;
-    txt += `Cantiere: ${s.cantiere||''} | RSPP: ${s.rspp||''}\n`;
-    txt += `Rischio: ${s.rischioGenerale||''}\n`;
-    if (s.noteLibere) txt += `Note: ${s.noteLibere}\n`;
-    const si = s.checklist?.filter(c=>c.valore==='SI').length||0;
-    const no = s.checklist?.filter(c=>c.valore==='NO').length||0;
-    txt += `Checklist: ${si} SI / ${no} NO\n`;
-    txt += `─`.repeat(40) + '\n\n';
+    const si = s.checklist?.filter(c => c.valore === 'SI').length || 0;
+    const no = s.checklist?.filter(c => c.valore === 'NO').length || 0;
+    txt += `${i+1}. ${s.azienda||'N/D'} — ${s.data||'N/D'} | SI:${si} NO:${no}\n`;
   });
   downloadText(txt, `backup_cantieresafe_${new Date().toISOString().split('T')[0]}.txt`, 'text/plain');
   toast('Backup esportato ✓', 'success');
 }
 
-// Update export select when view changes
-const origShowView = window.showView;
+async function populateExportSelect() {
+  const sel = document.getElementById('export-select');
+  if (!sel) return;
+  const all = await db.sopralluoghi.orderBy('createdAt').reverse().toArray();
+  sel.innerHTML = '<option value="">— Scegli sopralluogo —</option>' +
+    all.map(s => `<option value="${s.id}">${s.azienda||'N/D'} — ${s.data||''}</option>`).join('');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Patch nav to also populate export select
   document.querySelectorAll('.nav-btn').forEach(btn => {
     if (btn.dataset.view === 'export') {
       btn.addEventListener('click', populateExportSelect);

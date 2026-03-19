@@ -719,3 +719,51 @@ body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* ── FOTO CHECKLIST ── */
+.chk-foto-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.chk-photo-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.chk-photo-thumb:active {
+  border-color: var(--accent);
+}
+
+.chk-add-foto-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-elevated);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.chk-add-foto-btn:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
