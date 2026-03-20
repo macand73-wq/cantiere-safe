@@ -10,7 +10,7 @@
 
 const SUPABASE_URL = 'https://couqrvfutxhvzjpwgilz.sbClient.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvdXFydmZ1dHhodnpqcHdnaWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDY5ODksImV4cCI6MjA4OTU4Mjk4OX0.jEKMZalqAywjlFz370-BjqLep15L_V8JVwd1nOu-z_A';
-const sbClient = window.sbClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ═══════════════════════════════════════
 //  CHECKLIST TEMPLATES
