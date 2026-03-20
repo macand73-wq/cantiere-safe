@@ -8,9 +8,9 @@
 //  Sostituisci con i tuoi valori!
 // ═══════════════════════════════════════
 
-const SUPABASE_URL = 'https://couqrvfutxhvzjpwgilz.supabase.co';
+const SUPABASE_URL = 'https://couqrvfutxhvzjpwgilz.sbClient.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvdXFydmZ1dHhodnpqcHdnaWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDY5ODksImV4cCI6MjA4OTU4Mjk4OX0.jEKMZalqAywjlFz370-BjqLep15L_V8JVwd1nOu-z_A';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sbClient = window.sbClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ═══════════════════════════════════════
 //  CHECKLIST TEMPLATES
@@ -280,7 +280,7 @@ async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   if (!email || !password) { showAuthMessage('Inserisci email e password'); return; }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await sbClient.auth.signInWithPassword({ email, password });
   if (error) { showAuthMessage(error.message); return; }
 }
 
@@ -292,7 +292,7 @@ async function doRegister() {
   if (!email || !password) { showAuthMessage('Inserisci email e password'); return; }
   if (password.length < 8) { showAuthMessage('La password deve essere di almeno 8 caratteri'); return; }
 
-  const { error } = await supabase.auth.signUp({
+  const { error } = await sbClient.auth.signUp({
     email, password,
     options: { data: { nome, studio } }
   });
@@ -301,15 +301,15 @@ async function doRegister() {
 
   // Aggiorna profilo con nome e studio
   if (nome || studio) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await sbClient.auth.getUser();
     if (user) {
-      await supabase.from('profiles').update({ nome, studio }).eq('id', user.id);
+      await sbClient.from('profiles').update({ nome, studio }).eq('id', user.id);
     }
   }
 }
 
 async function doGoogleLogin() {
-  const { error } = await supabase.auth.signInWithOAuth({
+  const { error } = await sbClient.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: 'https://macand73-wq.github.io/cantiere-safe/' }
   });
@@ -317,7 +317,7 @@ async function doGoogleLogin() {
 }
 
 async function doLogout() {
-  await supabase.auth.signOut();
+  await sbClient.auth.signOut();
   currentUser = null;
   currentProfile = null;
   allSopralluoghi = [];
@@ -328,7 +328,7 @@ async function doLogout() {
 async function showForgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   if (!email) { showAuthMessage('Inserisci prima la tua email'); return; }
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await sbClient.auth.resetPasswordForEmail(email);
   if (error) { showAuthMessage(error.message); return; }
   showAuthMessage('Email di reset inviata! Controlla la tua casella.', 'success');
 }
@@ -718,10 +718,10 @@ async function saveSopralluogo() {
 
   let error;
   if (currentSopralluogo.id) {
-    ({ error } = await supabase.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
+    ({ error } = await sbClient.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
     if (!error) toast('Aggiornato', 'success');
   } else {
-    ({ error } = await supabase.from('sopralluoghi').insert(payload));
+    ({ error } = await sbClient.from('sopralluoghi').insert(payload));
     if (!error) toast('Salvato', 'success');
   }
 
@@ -817,7 +817,7 @@ async function editSopralluogo(id) {
 
 async function deleteSopralluogo(id) {
   if (!confirm('Eliminare definitivamente questo sopralluogo?')) return;
-  const { error } = await supabase.from('sopralluoghi').delete().eq('id', id);
+  const { error } = await sbClient.from('sopralluoghi').delete().eq('id', id);
   if (error) { toast('Errore eliminazione', 'error'); return; }
   toast('Eliminato', 'error');
   await loadHome();
@@ -1144,7 +1144,7 @@ async function loadSettings() {
 async function clearAllData() {
   if (!confirm('ATTENZIONE: Eliminare TUTTI i tuoi sopralluoghi?')) return;
   if (!confirm('Sei sicuro? Operazione irreversibile.')) return;
-  const { error } = await supabase.from('sopralluoghi').delete().eq('user_id', currentUser.id);
+  const { error } = await sbClient.from('sopralluoghi').delete().eq('user_id', currentUser.id);
   if (error) { toast('Errore eliminazione', 'error'); return; }
   toast('Dati eliminati', 'error');
   allSopralluoghi = [];
@@ -1178,13 +1178,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateOnlineStatus();
 
   // Controlla se c'è già una sessione attiva
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sbClient.auth.getSession();
   if (session) {
     await initApp(session.user);
   }
 
   // Ascolta cambiamenti di sessione (login/logout)
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  sbClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session) {
       await initApp(session.user);
     } else if (event === 'SIGNED_OUT') {
