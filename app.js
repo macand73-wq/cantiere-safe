@@ -379,7 +379,7 @@ async function initApp(user) {
 // ═══════════════════════════════════════
 
 async function loadHome() {
-  const { data, error } = await supabase
+ const { data, error } = await sbClient
     .from('sopralluoghi')
     .select('*')
     .order('created_at', { ascending: false });
