@@ -333,7 +333,7 @@ async function initApp(user) {
   document.getElementById('app-main').style.display = 'block';
 
   // Carica profilo
-  const { data: profile } = await supabase
+  const { data: profile } = await sbClient
     .from('profiles')
     .select('*')
     .eq('id', user.id)
