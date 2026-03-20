@@ -693,7 +693,8 @@ async function saveSopralluogo() {
   currentSopralluogo.note_libere = document.getElementById('f-noteLibere').value;
 
   if (!currentSopralluogo.azienda.trim()) { toast('Inserisci il nome azienda/cantiere', 'error'); return; }
-  if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
+    if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
+  console.log('Salvataggio in corso...', currentSopralluogo.azienda);
 
   const payload = {
     user_id: currentUser.id,
