@@ -300,7 +300,6 @@ async function doRegister() {
   if (error) { showAuthMessage(error.message); return; }
   showAuthMessage('Registrazione completata! Controlla la tua email per confermare.', 'success');
 
-  /
 }
 
 async function doGoogleLogin() {
