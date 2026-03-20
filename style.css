@@ -812,4 +812,104 @@ body {
 .chk-ripristina-btn:active {
   background: var(--accent);
   color: #0a1118;
+}/* ── AUTH SCREEN ── */
+.auth-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg-deep);
+}
+
+.auth-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-logo h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 8px 0 4px;
+}
+
+.auth-logo p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+#auth-tabs {
+  display: flex;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.auth-tab.active {
+  background: var(--accent);
+  color: #0a1118;
+}
+
+#auth-message.success {
+  background: #14532d44;
+  border: 1px solid #16a34a55;
+  color: #4ade80;
+}
+
+#auth-message.error {
+  background: #7f1d1d44;
+  border: 1px solid #b91c1c55;
+  color: #f87171;
+}
+
+/* ── LOGOUT BTN ── */
+.btn-logout {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 18px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-logout:active {
+  background: var(--accent-hot);
+  color: #fff;
+  border-color: var(--accent-hot);
 }

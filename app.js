@@ -1,16 +1,19 @@
 // ─────────────────────────────────────────────
-//  CantiereSafe — app.js v1.4
-//  Fix: foto PDF, emoji PDF, DOC, export tutti
+//  CantiereSafe — app.js v2.0 SaaS
+//  Backend: Supabase
 // ─────────────────────────────────────────────
 
-const db = new Dexie('CantiereSafeDB');
-db.version(1).stores({
-  sopralluoghi: '++id, azienda, data, createdAt, updatedAt',
-  settings: 'key'
-});
+// ═══════════════════════════════════════
+//  CONFIGURAZIONE SUPABASE
+//  Sostituisci con i tuoi valori!
+// ═══════════════════════════════════════
+
+const SUPABASE_URL = 'https://couqrvfutxhvzjpwgilz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvdXFydmZ1dHhodnpqcHdnaWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDY5ODksImV4cCI6MjA4OTU4Mjk4OX0.jEKMZalqAywjlFz370-BjqLep15L_V8JVwd1nOu-z_A';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ═══════════════════════════════════════
-//  CHECKLIST PER TIPO DI LUOGO
+//  CHECKLIST TEMPLATES
 // ═══════════════════════════════════════
 
 const CHECKLIST_CANTIERE = [
@@ -167,9 +170,9 @@ function getChecklistByLuogo(luogo) {
 //  STATE
 // ═══════════════════════════════════════
 
-let currentView = 'home';
+let currentUser = null;
+let currentProfile = null;
 let currentSopralluogo = null;
-let currentDetailId = null;
 let allSopralluoghi = [];
 let recognition = null;
 let isRecording = false;
@@ -187,7 +190,6 @@ function showView(name) {
   if (v) v.classList.add('active');
   const btn = document.querySelector(`.nav-btn[data-view="${name}"]`);
   if (btn) btn.classList.add('active');
-  currentView = name;
 }
 
 function toast(msg, type = '') {
@@ -212,7 +214,6 @@ function escHtml(str) {
   return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Rimuove emoji per jsPDF
 function stripEmoji(str) {
   return String(str||'').replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
     .replace(/[\u2600-\u27BF]/g, '')
@@ -239,7 +240,6 @@ function compressImage(file, callback) {
   reader.readAsDataURL(file);
 }
 
-// Calcola dimensioni foto mantenendo proporzioni
 function calcImageDims(dataUrl, maxW, maxH, callback) {
   const img = new Image();
   img.onload = () => {
@@ -253,11 +253,146 @@ function calcImageDims(dataUrl, maxW, maxH, callback) {
 }
 
 // ═══════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.auth-tab:${tab==='login'?'first':'last'}-child`).classList.add('active');
+  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+  hideAuthMessage();
+}
+
+function showAuthMessage(msg, type = 'error') {
+  const el = document.getElementById('auth-message');
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = 'block';
+}
+
+function hideAuthMessage() {
+  const el = document.getElementById('auth-message');
+  el.style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showAuthMessage('Inserisci email e password'); return; }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) { showAuthMessage(error.message); return; }
+}
+
+async function doRegister() {
+  const nome = document.getElementById('reg-nome').value.trim();
+  const studio = document.getElementById('reg-studio').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!email || !password) { showAuthMessage('Inserisci email e password'); return; }
+  if (password.length < 8) { showAuthMessage('La password deve essere di almeno 8 caratteri'); return; }
+
+  const { error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { nome, studio } }
+  });
+  if (error) { showAuthMessage(error.message); return; }
+  showAuthMessage('Registrazione completata! Controlla la tua email per confermare.', 'success');
+
+  // Aggiorna profilo con nome e studio
+  if (nome || studio) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({ nome, studio }).eq('id', user.id);
+    }
+  }
+}
+
+async function doGoogleLogin() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://macand73-wq.github.io/cantiere-safe/' }
+  });
+  if (error) { showAuthMessage(error.message); }
+}
+
+async function doLogout() {
+  await supabase.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
+  allSopralluoghi = [];
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('view-login').style.display = 'flex';
+}
+
+async function showForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email) { showAuthMessage('Inserisci prima la tua email'); return; }
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) { showAuthMessage(error.message); return; }
+  showAuthMessage('Email di reset inviata! Controlla la tua casella.', 'success');
+}
+
+async function initApp(user) {
+  currentUser = user;
+  document.getElementById('view-login').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+
+  // Carica profilo
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  currentProfile = profile;
+
+  // Aggiorna header
+  const nome = profile?.nome || user.email;
+  document.getElementById('header-user').textContent = nome;
+
+  // Aggiorna profilo view
+  document.getElementById('profile-nome').textContent = profile?.nome || 'Nome non impostato';
+  document.getElementById('profile-email').textContent = user.email;
+  document.getElementById('profile-studio').textContent = profile?.studio || '';
+
+  await loadHome();
+  showView('home');
+  initVoice();
+
+  // Nav
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.view;
+      if (v === 'nuovo') { initNuovoForm(); return; }
+      if (v === 'export') { populateExportSelect(); showView('export'); return; }
+      if (v === 'settings') { loadSettings(); showView('settings'); return; }
+      showView(v);
+      if (v === 'home') loadHome();
+    });
+  });
+
+  document.getElementById('photo-input').addEventListener('change', handlePhotoUpload);
+  document.getElementById('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox' || e.target.id === 'lightbox-close') {
+      document.getElementById('lightbox').classList.remove('open');
+    }
+  });
+}
+
+// ═══════════════════════════════════════
 //  HOME
 // ═══════════════════════════════════════
 
 async function loadHome() {
-  allSopralluoghi = await db.sopralluoghi.orderBy('createdAt').reverse().toArray();
+  const { data, error } = await supabase
+    .from('sopralluoghi')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) { toast('Errore caricamento dati', 'error'); return; }
+  allSopralluoghi = data || [];
+
   const list = document.getElementById('sopr-list');
   if (!allSopralluoghi.length) {
     list.innerHTML = `<div class="empty-state">
@@ -267,11 +402,13 @@ async function loadHome() {
     </div>`;
     return;
   }
+
   list.innerHTML = allSopralluoghi.map(s => {
-    const si = s.checklist?.filter(c => c.valore === 'SI').length || 0;
-    const no = s.checklist?.filter(c => c.valore === 'NO').length || 0;
-    const tot = s.checklist?.filter(c => !c.nascosta && c.testo).length || 0;
-    const fotoN = s.foto?.length || 0;
+    const checklist = s.checklist || [];
+    const si = checklist.filter(c => c.valore === 'SI').length;
+    const no = checklist.filter(c => c.valore === 'NO').length;
+    const tot = checklist.filter(c => !c.nascosta && c.testo).length;
+    const fotoN = (s.foto || []).length;
     const luogoIcon = {cantiere:'🏗', azienda:'🏢', edificio:'🏠'}[s.luogo] || '📍';
     return `<div class="sopralluogo-card" onclick="openDetail(${s.id})">
       <div class="sopr-company">${escHtml(s.azienda || 'Azienda N/D')}</div>
@@ -279,10 +416,10 @@ async function loadHome() {
         <span class="sopr-date">📅 ${formatDate(s.data)}</span>
         <span class="sopr-date">${luogoIcon} ${escHtml(s.luogo || '')}</span>
         <div class="sopr-tags">
-          ${tot ? `<span class="tag">${si}/${tot} ✓</span>` : ''}
+          ${tot ? `<span class="tag">${si}/${tot}</span>` : ''}
           ${no ? `<span class="tag red">${no} NO</span>` : ''}
           ${fotoN ? `<span class="tag amber">Foto ${fotoN}</span>` : ''}
-          ${s.rischioGenerale ? `<span class="tag ${getRiskoClass(s.rischioGenerale)}">${s.rischioGenerale.toUpperCase()}</span>` : ''}
+          ${s.rischio_generale ? `<span class="tag ${getRiskoClass(s.rischio_generale)}">${s.rischio_generale.toUpperCase()}</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -299,19 +436,19 @@ function initNuovoForm() {
   currentSopralluogo = {
     azienda:'', cantiere:'', indirizzo:'', rspp:'', luogo,
     data: new Date().toISOString().split('T')[0],
-    rischioGenerale:'medio',
-    noteLibere:'', dettatura:'',
+    rischio_generale:'medio',
+    note_libere:'', dettatura:'',
     checklist: template.map(t => ({...t, valore:'NA', commento:'', foto:[], nascosta:false})),
     foto:[],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
   };
   photoIdCounter = 0;
   chkPhotoCounters = {};
-  ['azienda','cantiere','indirizzo','rspp','data','luogo','rischioGenerale','noteLibere'].forEach(f => {
+  ['azienda','cantiere','indirizzo','rspp','data','luogo'].forEach(f => {
     const el = document.getElementById('f-' + f);
     if (el) el.value = currentSopralluogo[f];
   });
+  document.getElementById('f-rischioGenerale').value = 'medio';
+  document.getElementById('f-noteLibere').value = '';
   document.getElementById('voice-text').textContent = 'Premi il microfono per dettare note...';
   renderChecklist();
   renderPhotoGrid();
@@ -327,7 +464,7 @@ function onLuogoChange() {
   }));
   chkPhotoCounters = {};
   renderChecklist();
-  toast('Checklist aggiornata per ' + luogo + ' ✓', 'success');
+  toast('Checklist aggiornata per ' + luogo, 'success');
 }
 
 // ═══════════════════════════════════════
@@ -349,10 +486,9 @@ function renderChecklist() {
             <span style="font-size:11px;color:var(--text-muted);font-style:italic">${escHtml(item.testo||'Voce personalizzata')} — nascosta</span>
             <button class="chk-ripristina-btn" onclick="toggleNascondi('${item.id}')">Ripristina</button>
           </div>`;
-
         if (item.personalizzabile) return `
           <div class="checklist-item" id="chkitem-${item.id}">
-            <input type="text" class="form-input chk-custom-input"
+            <input type="text" class="form-input"
               placeholder="Aggiungi voce personalizzata..."
               value="${escHtml(item.testo||'')}"
               oninput="setTestoPersonalizzato('${item.id}', this.value)"
@@ -366,7 +502,6 @@ function renderChecklist() {
               <label for="${item.id}-na">N.A.</label>
             </div>
           </div>`;
-
         return `
           <div class="checklist-item" id="chkitem-${item.id}">
             <div class="checklist-item-text">${escHtml(item.testo)}</div>
@@ -379,7 +514,7 @@ function renderChecklist() {
                 <input type="radio" name="chk-${item.id}" id="${item.id}-na" value="NA" ${item.valore==='NA'?'checked':''} onchange="setCheck('${item.id}','NA')">
                 <label for="${item.id}-na">N.A.</label>
               </div>
-              <button class="chk-nascondi-btn" onclick="toggleNascondi('${item.id}')" title="Nascondi voce">X</button>
+              <button class="chk-nascondi-btn" onclick="toggleNascondi('${item.id}')">X</button>
             </div>
             <input type="text" class="commento-input"
               placeholder="Nota..."
@@ -470,10 +605,6 @@ function renderPhotoGrid() {
   </label>`;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('photo-input').addEventListener('change', handlePhotoUpload);
-});
-
 function handlePhotoUpload(e) {
   [...e.target.files].forEach(file => {
     compressImage(file, dataUrl => {
@@ -481,7 +612,6 @@ function handlePhotoUpload(e) {
       currentSopralluogo.foto.push({
         id: 'p' + photoIdCounter,
         dataUrl,
-        didascalia: '',
         timestamp: new Date().toISOString()
       });
       renderPhotoGrid();
@@ -549,37 +679,55 @@ function stopRecording() {
   document.getElementById('voice-btn').textContent = '🎙';
   if (currentSopralluogo?.dettatura) {
     document.getElementById('f-noteLibere').value += (document.getElementById('f-noteLibere').value ? '\n\n' : '') + '[DETTATURA]\n' + currentSopralluogo.dettatura;
-    currentSopralluogo.noteLibere = document.getElementById('f-noteLibere').value;
+    currentSopralluogo.note_libere = document.getElementById('f-noteLibere').value;
     document.getElementById('voice-text').textContent = 'Testo aggiunto alle note';
     currentSopralluogo.dettatura = '';
-    toast('Dettatura aggiunta alle note', 'success');
+    toast('Dettatura aggiunta', 'success');
   }
 }
 
 // ═══════════════════════════════════════
-//  SALVA
+//  SALVA SU SUPABASE
 // ═══════════════════════════════════════
 
 async function saveSopralluogo() {
-  ['azienda','cantiere','indirizzo','rspp','data','luogo','rischioGenerale','noteLibere'].forEach(f => {
+  ['azienda','cantiere','indirizzo','rspp','data','luogo'].forEach(f => {
     const el = document.getElementById('f-' + f);
     if (el) currentSopralluogo[f] = el.value;
   });
+  currentSopralluogo.rischio_generale = document.getElementById('f-rischioGenerale').value;
+  currentSopralluogo.note_libere = document.getElementById('f-noteLibere').value;
+
   if (!currentSopralluogo.azienda.trim()) { toast('Inserisci il nome azienda/cantiere', 'error'); return; }
   if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
-  currentSopralluogo.updatedAt = new Date().toISOString();
-  try {
-    if (currentSopralluogo.id) {
-      await db.sopralluoghi.update(currentSopralluogo.id, currentSopralluogo);
-      toast('Aggiornato', 'success');
-    } else {
-      const id = await db.sopralluoghi.add(currentSopralluogo);
-      currentSopralluogo.id = id;
-      toast('Salvato', 'success');
-    }
-    await loadHome();
-    showView('home');
-  } catch(err) { toast('Errore: ' + err.message, 'error'); }
+
+  const payload = {
+    user_id: currentUser.id,
+    azienda: currentSopralluogo.azienda,
+    cantiere: currentSopralluogo.cantiere,
+    indirizzo: currentSopralluogo.indirizzo,
+    rspp: currentSopralluogo.rspp,
+    luogo: currentSopralluogo.luogo,
+    data: currentSopralluogo.data,
+    rischio_generale: currentSopralluogo.rischio_generale,
+    note_libere: currentSopralluogo.note_libere,
+    checklist: currentSopralluogo.checklist,
+    foto: currentSopralluogo.foto,
+    updated_at: new Date().toISOString()
+  };
+
+  let error;
+  if (currentSopralluogo.id) {
+    ({ error } = await supabase.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
+    if (!error) toast('Aggiornato', 'success');
+  } else {
+    ({ error } = await supabase.from('sopralluoghi').insert(payload));
+    if (!error) toast('Salvato', 'success');
+  }
+
+  if (error) { toast('Errore: ' + error.message, 'error'); return; }
+  await loadHome();
+  showView('home');
 }
 
 // ═══════════════════════════════════════
@@ -587,18 +735,20 @@ async function saveSopralluogo() {
 // ═══════════════════════════════════════
 
 async function openDetail(id) {
-  const s = await db.sopralluoghi.get(id);
+  const s = allSopralluoghi.find(x => x.id === id);
   if (!s) return;
-  currentDetailId = id;
   currentDetailFotos = s.foto || [];
+
   const visibili = (s.checklist||[]).filter(c => !c.nascosta && c.testo);
   const si = visibili.filter(c => c.valore === 'SI').length;
   const no = visibili.filter(c => c.valore === 'NO').length;
   const na = visibili.filter(c => c.valore === 'NA').length;
   const luogoIcon = {cantiere:'🏗', azienda:'🏢', edificio:'🏠'}[s.luogo] || '📍';
+
   const photosHtml = (s.foto||[]).map(p =>
     `<img class="photo-thumb" src="${p.dataUrl}" onclick="openLightbox('${p.id}')">`
   ).join('');
+
   const cats = [...new Set((s.checklist||[]).map(c => c.categoria))];
   const checklistHtml = cats.map(cat => {
     const items = (s.checklist||[]).filter(c => c.categoria === cat && !c.nascosta && c.testo);
@@ -627,17 +777,17 @@ async function openDetail(id) {
       <div class="card-title">📋 Informazioni</div>
       ${s.indirizzo ? `<p style="font-size:14px;color:var(--text-secondary);margin-bottom:6px;">Indirizzo: ${escHtml(s.indirizzo)}</p>` : ''}
       ${s.rspp ? `<p style="font-size:14px;color:var(--text-secondary);margin-bottom:6px;">RSPP: ${escHtml(s.rspp)}</p>` : ''}
-      ${s.rischioGenerale ? `<span class="risk-badge ${s.rischioGenerale}">Rischio ${s.rischioGenerale}</span>` : ''}
+      ${s.rischio_generale ? `<span class="risk-badge ${s.rischio_generale}">Rischio ${s.rischio_generale}</span>` : ''}
     </div>
-    ${s.noteLibere ? `<div class="card"><div class="card-title">📝 Note</div><p style="font-size:14px;line-height:1.6;white-space:pre-wrap">${escHtml(s.noteLibere)}</p></div>` : ''}
+    ${s.note_libere ? `<div class="card"><div class="card-title">📝 Note</div><p style="font-size:14px;line-height:1.6;white-space:pre-wrap">${escHtml(s.note_libere)}</p></div>` : ''}
     ${s.foto?.length ? `<div class="card"><div class="card-title">📷 Foto generali (${s.foto.length})</div><div class="photo-grid">${photosHtml}</div></div>` : ''}
     <div class="card"><div class="card-title">✅ Checklist</div>${checklistHtml}</div>
     <hr class="divider">
     <div class="flex-row mt-12">
-      <button class="btn btn-ghost" onclick="editSopralluogo(${s.id})">✏️ Modifica</button>
-      <button class="btn btn-danger" onclick="deleteSopralluogo(${s.id})">🗑 Elimina</button>
+      <button class="btn btn-ghost" onclick="editSopralluogo(${s.id})">Modifica</button>
+      <button class="btn btn-danger" onclick="deleteSopralluogo(${s.id})">Elimina</button>
     </div>
-    <button class="btn btn-primary mt-8" onclick="showExportForId(${s.id})">📤 Esporta Report</button>`;
+    <button class="btn btn-primary mt-8" onclick="showExportForId(${s.id})">Esporta Report</button>`;
   showView('detail');
 }
 
@@ -647,14 +797,18 @@ function openDetailChkPhoto(dataUrl) {
 }
 
 async function editSopralluogo(id) {
-  const s = await db.sopralluoghi.get(id);
+  const s = allSopralluoghi.find(x => x.id === id);
+  if (!s) return;
   currentSopralluogo = JSON.parse(JSON.stringify(s));
+  currentSopralluogo.note_libere = s.note_libere || '';
   photoIdCounter = s.foto?.length || 0;
   chkPhotoCounters = {};
-  ['azienda','cantiere','indirizzo','rspp','data','luogo','rischioGenerale','noteLibere'].forEach(f => {
+  ['azienda','cantiere','indirizzo','rspp','data','luogo'].forEach(f => {
     const el = document.getElementById('f-' + f);
     if (el) el.value = currentSopralluogo[f] || '';
   });
+  document.getElementById('f-rischioGenerale').value = s.rischio_generale || 'medio';
+  document.getElementById('f-noteLibere').value = s.note_libere || '';
   document.getElementById('voice-text').textContent = 'Premi il microfono per dettare note...';
   renderChecklist();
   renderPhotoGrid();
@@ -663,7 +817,8 @@ async function editSopralluogo(id) {
 
 async function deleteSopralluogo(id) {
   if (!confirm('Eliminare definitivamente questo sopralluogo?')) return;
-  await db.sopralluoghi.delete(id);
+  const { error } = await supabase.from('sopralluoghi').delete().eq('id', id);
+  if (error) { toast('Errore eliminazione', 'error'); return; }
   toast('Eliminato', 'error');
   await loadHome();
   showView('home');
@@ -673,10 +828,7 @@ async function deleteSopralluogo(id) {
 //  EXPORT
 // ═══════════════════════════════════════
 
-let exportTargetId = null;
-
 async function showExportForId(id) {
-  exportTargetId = id;
   await populateExportSelect();
   document.getElementById('export-select').value = id;
   showView('export');
@@ -685,24 +837,20 @@ async function showExportForId(id) {
 async function populateExportSelect() {
   const sel = document.getElementById('export-select');
   if (!sel) return;
-  const all = await db.sopralluoghi.orderBy('createdAt').reverse().toArray();
   sel.innerHTML = '<option value="">— Scegli sopralluogo —</option>' +
-    all.map(s => `<option value="${s.id}">${escHtml(s.azienda||'N/D')} — ${s.data||''}</option>`).join('');
+    allSopralluoghi.map(s => `<option value="${s.id}">${escHtml(s.azienda||'N/D')} — ${s.data||''}</option>`).join('');
 }
 
 async function getExpTarget() {
   const v = document.getElementById('export-select')?.value;
-  if (v) return await db.sopralluoghi.get(parseInt(v));
-  const all = await db.sopralluoghi.orderBy('createdAt').reverse().toArray();
-  return all[0] || null;
+  if (v) return allSopralluoghi.find(s => s.id === parseInt(v)) || null;
+  return allSopralluoghi[0] || null;
 }
 
-// ── PDF ──
 async function exportPDF() {
   const s = await getExpTarget();
   if (!s) { toast('Nessun sopralluogo selezionato', 'error'); return; }
   toast('Generazione PDF...', '');
-
   const {jsPDF} = window.jspdf;
   const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
   const margin=18, pageW=210, usableW=pageW-margin*2;
@@ -711,7 +859,6 @@ async function exportPDF() {
 
   function checkPage(need=20){ if(y+need>275){doc.addPage();y=margin;} }
 
-  // Header
   doc.setFillColor(...CH); doc.rect(0,0,pageW,42,'F');
   doc.setFillColor(...CA); doc.rect(0,42,pageW,2,'F');
   doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(...CA);
@@ -721,7 +868,6 @@ async function exportPDF() {
   doc.setFontSize(9); doc.text('D.Lgs. 81/2008 - RSPP Report',margin,35);
   y=52;
 
-  // Info box
   const luogoLabel = {cantiere:'Cantiere', azienda:'Azienda', edificio:'Edificio'}[s.luogo]||s.luogo||'';
   doc.setFillColor(245,247,250); doc.roundedRect(margin,y,usableW,42,3,3,'F');
   doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(...CT);
@@ -734,7 +880,6 @@ async function exportPDF() {
   if(s.rspp) doc.text('RSPP: '+stripEmoji(s.rspp),margin+5+usableW/2,y+37);
   y+=48;
 
-  // Riepilogo
   const visibili=(s.checklist||[]).filter(c=>!c.nascosta&&c.testo);
   const si=visibili.filter(c=>c.valore==='SI').length;
   const no=visibili.filter(c=>c.valore==='NO').length;
@@ -749,20 +894,19 @@ async function exportPDF() {
   });
   y+=24;
 
-  if(s.rischioGenerale){
-    const rC={basso:CG,medio:CA,alto:CR}[s.rischioGenerale]||CGR;
+  if(s.rischio_generale){
+    const rC={basso:CG,medio:CA,alto:CR}[s.rischio_generale]||CGR;
     doc.setFillColor(...rC); doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(255,255,255);
     doc.roundedRect(margin,y,55,9,2,2,'F');
-    doc.text('RISCHIO: '+s.rischioGenerale.toUpperCase(),margin+27,y+6,{align:'center'});
+    doc.text('RISCHIO: '+s.rischio_generale.toUpperCase(),margin+27,y+6,{align:'center'});
     y+=14;
   } else { y+=4; }
 
-  // Note
-  if(s.noteLibere?.trim()){
+  if(s.note_libere?.trim()){
     checkPage(30);
     doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...CA);
     doc.text('NOTE LIBERE',margin,y); y+=5;
-    const noteClean = stripEmoji(s.noteLibere);
+    const noteClean = stripEmoji(s.note_libere);
     const nl=doc.splitTextToSize(noteClean,usableW-8);
     doc.setFillColor(...CL); doc.roundedRect(margin,y,usableW,nl.length*4.5+6,2,2,'F');
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...CT);
@@ -770,10 +914,8 @@ async function exportPDF() {
     y+=nl.length*4.5+12;
   }
 
-  // Checklist
   const chkFotoRimandi = [];
   const cats=[...new Set((s.checklist||[]).map(c=>c.categoria))];
-
   for(const cat of cats){
     const items=(s.checklist||[]).filter(c=>c.categoria===cat&&!c.nascosta&&c.testo);
     if(!items.length) continue;
@@ -782,38 +924,31 @@ async function exportPDF() {
     doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(255,255,255);
     doc.text(stripEmoji(cat).toUpperCase(),margin+4,y+5.5);
     y+=10;
-
-    for(let idx=0; idx<items.length; idx++){
+    for(let idx=0;idx<items.length;idx++){
       const item=items[idx];
       const hasFoto=item.foto&&item.foto.length>0;
       const fotoInline=hasFoto&&item.foto.length<=2;
       checkPage(20);
-
       if(idx%2===0){doc.setFillColor(...CL);doc.rect(margin,y-1,usableW,10,'F');}
       doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...CT);
-      const testoClean=stripEmoji(item.testo);
-      const tl=doc.splitTextToSize(testoClean,usableW-22);
+      const tl=doc.splitTextToSize(stripEmoji(item.testo),usableW-22);
       doc.text(tl[0],margin+2,y+5);
-
       const vC={SI:CG,NO:CR,NA:CGR}[item.valore]||CGR;
       doc.setFillColor(...vC); doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(255,255,255);
       doc.roundedRect(pageW-margin-16,y+1,16,6,1,1,'F');
       doc.text(item.valore,pageW-margin-8,y+5.5,{align:'center'});
       y+=10;
-
       if(item.commento){
         checkPage(8);
         doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(...CGR);
         doc.text('Nota: '+stripEmoji(item.commento),margin+4,y+4);
         y+=7;
       }
-
       if(fotoInline){
-        // Foto inline con proporzioni corrette
-        for(let fi=0; fi<item.foto.length; fi++){
+        for(let fi=0;fi<item.foto.length;fi++){
           const f=item.foto[fi];
           await new Promise(resolve=>{
-            calcImageDims(f.dataUrl, (usableW-6)/2, 60, (iw,ih)=>{
+            calcImageDims(f.dataUrl,(usableW-6)/2,60,(iw,ih)=>{
               checkPage(ih+6);
               const bx=margin+(fi%2)*((usableW-6)/2+6);
               try{ doc.addImage(f.dataUrl,'JPEG',bx,y,iw,ih,undefined,'MEDIUM'); }catch(e){}
@@ -825,7 +960,7 @@ async function exportPDF() {
         y+=2;
       } else if(hasFoto){
         const rimandoId=chkFotoRimandi.length+1;
-        chkFotoRimandi.push({id:rimandoId, testo:item.testo, foto:item.foto});
+        chkFotoRimandi.push({id:rimandoId,testo:item.testo,foto:item.foto});
         checkPage(8);
         doc.setFont('helvetica','italic'); doc.setFontSize(7.5); doc.setTextColor(...CA);
         doc.text('Vedi foto allegate - Ref. F'+rimandoId,margin+4,y+4);
@@ -835,27 +970,24 @@ async function exportPDF() {
     y+=4;
   }
 
-  // Foto generali
   if(s.foto?.length){
     checkPage(30);
     doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...CA);
     doc.text('DOCUMENTAZIONE FOTOGRAFICA GENERALE',margin,y); y+=6;
     for(const foto of s.foto){
       await new Promise(resolve=>{
-        calcImageDims(foto.dataUrl, usableW, 80, (iw,ih)=>{
+        calcImageDims(foto.dataUrl,usableW,80,(iw,ih)=>{
           checkPage(ih+8);
           try{
             doc.addImage(foto.dataUrl,'JPEG',margin,y,iw,ih,undefined,'MEDIUM');
             doc.setDrawColor(200,210,220); doc.setLineWidth(0.3); doc.rect(margin,y,iw,ih);
           }catch(e){}
-          y+=ih+8;
-          resolve();
+          y+=ih+8; resolve();
         });
       });
     }
   }
 
-  // Foto rimandi checklist
   if(chkFotoRimandi.length){
     checkPage(30);
     doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...CA);
@@ -866,11 +998,10 @@ async function exportPDF() {
       doc.text('F'+rimando.id+' - '+stripEmoji(rimando.testo),margin,y); y+=6;
       for(const f of rimando.foto){
         await new Promise(resolve=>{
-          calcImageDims(f.dataUrl, usableW, 70, (iw,ih)=>{
+          calcImageDims(f.dataUrl,usableW,70,(iw,ih)=>{
             checkPage(ih+8);
             try{ doc.addImage(f.dataUrl,'JPEG',margin,y,iw,ih,undefined,'MEDIUM'); }catch(e){}
-            y+=ih+6;
-            resolve();
+            y+=ih+6; resolve();
           });
         });
       }
@@ -878,7 +1009,6 @@ async function exportPDF() {
     }
   }
 
-  // Firme
   checkPage(30); y+=10;
   doc.setDrawColor(...CGR); doc.setLineWidth(0.3);
   doc.line(margin,y,margin+70,y); doc.line(pageW-margin-70,y,pageW-margin,y);
@@ -886,7 +1016,6 @@ async function exportPDF() {
   doc.text('Firma RSPP',margin+35,y+5,{align:'center'});
   doc.text('Firma Resp. Cantiere',pageW-margin-35,y+5,{align:'center'});
 
-  // Footer pagine
   const pages=doc.internal.getNumberOfPages();
   for(let i=1;i<=pages;i++){
     doc.setPage(i); doc.setFontSize(8); doc.setTextColor(...CGR);
@@ -898,7 +1027,6 @@ async function exportPDF() {
   toast('PDF esportato', 'success');
 }
 
-// ── TXT ──
 async function exportTXT() {
   const s = await getExpTarget();
   if (!s) { toast('Nessun sopralluogo selezionato', 'error'); return; }
@@ -914,10 +1042,10 @@ async function exportTXT() {
   txt+='Indirizzo        : '+(s.indirizzo||'N/D')+'\n';
   txt+='RSPP             : '+(s.rspp||'N/D')+'\n';
   txt+='Data Ispezione   : '+formatDate(s.data)+'\n';
-  txt+='Rischio Generale : '+((s.rischioGenerale||'N/D').toUpperCase())+'\n\n';
+  txt+='Rischio Generale : '+((s.rischio_generale||'N/D').toUpperCase())+'\n\n';
   txt+='RIEPILOGO\n'+'─'.repeat(35)+'\n';
   txt+='Conformi: '+si+' / Non Conformi: '+no+' / N.A.: '+na+'\n\n';
-  if(s.noteLibere) txt+='NOTE LIBERE\n'+'─'.repeat(35)+'\n'+s.noteLibere+'\n\n';
+  if(s.note_libere) txt+='NOTE LIBERE\n'+'─'.repeat(35)+'\n'+s.note_libere+'\n\n';
   txt+='CHECKLIST\n'+'─'.repeat(55)+'\n';
   const cats=[...new Set((s.checklist||[]).map(c=>c.categoria))];
   cats.forEach(cat=>{
@@ -935,7 +1063,6 @@ async function exportTXT() {
   toast('TXT esportato', 'success');
 }
 
-// ── DOC ──
 async function exportDOC() {
   const s = await getExpTarget();
   if (!s) { toast('Nessun sopralluogo selezionato', 'error'); return; }
@@ -943,8 +1070,6 @@ async function exportDOC() {
   const si=visibili.filter(c=>c.valore==='SI').length;
   const no=visibili.filter(c=>c.valore==='NO').length;
   const luogoLabel={cantiere:'Cantiere',azienda:'Azienda',edificio:'Edificio'}[s.luogo]||s.luogo||'N/D';
-
-  // Raggruppa per categoria
   const cats=[...new Set(visibili.map(c=>c.categoria))];
   const checklistHtml=cats.map(cat=>{
     const items=visibili.filter(c=>c.categoria===cat);
@@ -957,63 +1082,48 @@ async function exportDOC() {
     }).join('');
     return '<tr><td colspan="2" style="background:#1e2832;color:white;padding:6px 8px;font-size:11px;font-weight:bold">'+escHtml(cat.toUpperCase())+'</td></tr>'+rows;
   }).join('');
-
-  const html=
-    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'
     +'<head><meta charset="UTF-8"><meta name=ProgId content=Word.Document>'
-    +'<style>body{font-family:Arial;color:#1e2832;margin:2cm}'
-    +'h1{color:#b45309;font-size:16pt;border-bottom:3px solid #f59e0b;padding-bottom:6px}'
-    +'h2{font-size:12pt;background:#f1f5f9;padding:4px 8px;margin-top:14px}'
-    +'table{width:100%;border-collapse:collapse;margin-top:6px}'
-    +'th{background:#1e2832;color:white;padding:6px 8px;text-align:left;font-size:10pt}'
-    +'p{font-size:10pt;margin:4px 0}'
-    +'</style></head><body>'
+    +'<style>body{font-family:Arial;color:#1e2832;margin:2cm}h1{color:#b45309;font-size:16pt;border-bottom:3px solid #f59e0b;padding-bottom:6px}h2{font-size:12pt;background:#f1f5f9;padding:4px 8px;margin-top:14px}table{width:100%;border-collapse:collapse;margin-top:6px}th{background:#1e2832;color:white;padding:6px 8px;text-align:left;font-size:10pt}p{font-size:10pt;margin:4px 0}</style></head><body>'
     +'<h1>CANTIERE SAFE - Verbale di Sopralluogo</h1>'
     +'<p><b>Azienda:</b> '+escHtml(s.azienda||'N/D')+'</p>'
     +'<p><b>Tipo luogo:</b> '+luogoLabel+' &nbsp; <b>Data:</b> '+formatDate(s.data)+'</p>'
     +'<p><b>RSPP:</b> '+escHtml(s.rspp||'N/D')+(s.indirizzo?' &nbsp; <b>Indirizzo:</b> '+escHtml(s.indirizzo):'')+'</p>'
-    +'<p><b>Rischio generale:</b> '+(s.rischioGenerale||'N/D').toUpperCase()+' &nbsp; <b>Conformi:</b> '+si+' &nbsp; <b>Non Conformi:</b> '+no+'</p>'
-    +(s.noteLibere?'<h2>NOTE LIBERE</h2><p style="white-space:pre-wrap">'+escHtml(s.noteLibere)+'</p>':'')
-    +'<h2>CHECKLIST</h2>'
-    +'<table><thead><tr><th>Punto di Controllo</th><th style="width:60px;text-align:center">Esito</th></tr></thead>'
-    +'<tbody>'+checklistHtml+'</tbody></table>'
+    +'<p><b>Rischio generale:</b> '+(s.rischio_generale||'N/D').toUpperCase()+' &nbsp; <b>Conformi:</b> '+si+' &nbsp; <b>Non Conformi:</b> '+no+'</p>'
+    +(s.note_libere?'<h2>NOTE LIBERE</h2><p style="white-space:pre-wrap">'+escHtml(s.note_libere)+'</p>':'')
+    +'<h2>CHECKLIST</h2><table><thead><tr><th>Punto di Controllo</th><th style="width:60px;text-align:center">Esito</th></tr></thead><tbody>'+checklistHtml+'</tbody></table>'
     +'<p style="margin-top:24px;font-size:9pt;color:#64748b">Generato il '+new Date().toLocaleString('it-IT')+' - CantiereSafe RSPP</p>'
     +'</body></html>';
-
-  const blob = new Blob(['\ufeff'+html], {type:'application/msword;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const blob=new Blob(['\ufeff'+html],{type:'application/msword;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
   a.href=url; a.download='sopralluogo_'+(s.azienda||'cantiere').replace(/[^a-z0-9]/gi,'_')+'_'+(s.data||'data')+'.doc';
   a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast('.doc esportato', 'success');
 }
 
-// ── BACKUP TUTTI ──
 async function exportAllTXT() {
-  const all = await db.sopralluoghi.orderBy('createdAt').toArray();
-  if (!all.length) { toast('Nessun dato da esportare', 'error'); return; }
+  if (!allSopralluoghi.length) { toast('Nessun dato', 'error'); return; }
   let txt='BACKUP COMPLETO CANTIERE SAFE\nEsportato il '+new Date().toLocaleString('it-IT')+'\n'+'='.repeat(55)+'\n\n';
-  all.forEach((s,i)=>{
+  allSopralluoghi.forEach((s,i)=>{
     const visibili=(s.checklist||[]).filter(c=>!c.nascosta&&c.testo);
     const si=visibili.filter(c=>c.valore==='SI').length;
     const no=visibili.filter(c=>c.valore==='NO').length;
     const na=visibili.filter(c=>c.valore==='NA').length;
     const luogoLabel={cantiere:'Cantiere',azienda:'Azienda',edificio:'Edificio'}[s.luogo]||s.luogo||'N/D';
-    txt+=(i+1)+'. '+( s.azienda||'N/D')+' - '+luogoLabel+' - '+formatDate(s.data)+'\n';
-    txt+='   Rischio: '+(s.rischioGenerale||'N/D').toUpperCase()+' | SI: '+si+' | NO: '+no+' | NA: '+na+'\n';
-    txt+='   RSPP: '+(s.rspp||'N/D')+'\n';
-    if(s.noteLibere) txt+='   Note: '+s.noteLibere.substring(0,100)+(s.noteLibere.length>100?'...':'')+'\n';
-    txt+='\n';
+    txt+=(i+1)+'. '+(s.azienda||'N/D')+' - '+luogoLabel+' - '+formatDate(s.data)+'\n';
+    txt+='   Rischio: '+(s.rischio_generale||'N/D').toUpperCase()+' | SI: '+si+' | NO: '+no+' | NA: '+na+'\n';
+    txt+='   RSPP: '+(s.rspp||'N/D')+'\n\n';
   });
   downloadText(txt,'backup_cantieresafe_'+new Date().toISOString().split('T')[0]+'.txt','text/plain');
   toast('Backup esportato', 'success');
 }
 
 function downloadText(content, filename, mimeType) {
-  const blob = new Blob([content], {type:mimeType});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const blob=new Blob([content],{type:mimeType});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
   a.href=url; a.download=filename; a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -1022,17 +1132,36 @@ function downloadText(content, filename, mimeType) {
 //  SETTINGS
 // ═══════════════════════════════════════
 
-function renderSettings() {
-  db.sopralluoghi.count().then(n => { document.getElementById('settings-count').textContent = n; });
+async function loadSettings() {
+  document.getElementById('settings-count').textContent = allSopralluoghi.length;
+  if (currentProfile) {
+    document.getElementById('profile-nome').textContent = currentProfile.nome || 'Nome non impostato';
+    document.getElementById('profile-email').textContent = currentUser?.email || '';
+    document.getElementById('profile-studio').textContent = currentProfile.studio || '';
+  }
 }
 
 async function clearAllData() {
-  if (!confirm('ATTENZIONE: Eliminare TUTTI i sopralluoghi?')) return;
+  if (!confirm('ATTENZIONE: Eliminare TUTTI i tuoi sopralluoghi?')) return;
   if (!confirm('Sei sicuro? Operazione irreversibile.')) return;
-  await db.sopralluoghi.clear();
+  const { error } = await supabase.from('sopralluoghi').delete().eq('user_id', currentUser.id);
+  if (error) { toast('Errore eliminazione', 'error'); return; }
   toast('Dati eliminati', 'error');
   allSopralluoghi = [];
   await loadHome();
+}
+
+// ═══════════════════════════════════════
+//  ONLINE STATUS
+// ═══════════════════════════════════════
+
+function updateOnlineStatus() {
+  const dot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  if (!dot || !statusText) return;
+  const online = navigator.onLine;
+  dot.className = 'status-dot' + (online ? '' : ' offline');
+  statusText.textContent = online ? 'Connesso - dati sincronizzati' : 'Offline - alcune funzioni non disponibili';
 }
 
 // ═══════════════════════════════════════
@@ -1043,35 +1172,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
   }
-  const dot = document.getElementById('status-dot');
-  const statusText = document.getElementById('status-text');
-  function updateOnlineStatus() {
-    const online = navigator.onLine;
-    dot.className = 'status-dot' + (online ? '' : ' offline');
-    statusText.textContent = online ? 'Connesso - dati salvati offline' : 'Offline - modalita\' locale attiva';
-  }
+
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   updateOnlineStatus();
 
-  document.querySelectorAll('.nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const v = btn.dataset.view;
-      if (v === 'nuovo') { initNuovoForm(); return; }
-      if (v === 'export') { exportTargetId = null; populateExportSelect(); showView('export'); return; }
-      if (v === 'settings') { renderSettings(); showView('settings'); return; }
-      showView(v);
-      if (v === 'home') loadHome();
-    });
-  });
+  // Controlla se c'è già una sessione attiva
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    await initApp(session.user);
+  }
 
-  document.getElementById('lightbox').addEventListener('click', (e) => {
-    if (e.target.id === 'lightbox' || e.target.id === 'lightbox-close') {
-      document.getElementById('lightbox').classList.remove('open');
+  // Ascolta cambiamenti di sessione (login/logout)
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      await initApp(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      document.getElementById('app-main').style.display = 'none';
+      document.getElementById('view-login').style.display = 'flex';
     }
   });
-
-  await loadHome();
-  showView('home');
-  initVoice();
 });
