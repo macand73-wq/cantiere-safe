@@ -300,13 +300,7 @@ async function doRegister() {
   if (error) { showAuthMessage(error.message); return; }
   showAuthMessage('Registrazione completata! Controlla la tua email per confermare.', 'success');
 
-  // Aggiorna profilo con nome e studio
-  if (nome || studio) {
-    const { data: { user } } = await sbClient.auth.getUser();
-    if (user) {
-      await sbClient.from('profiles').update({ nome, studio }).eq('id', user.id);
-    }
-  }
+  /
 }
 
 async function doGoogleLogin() {
