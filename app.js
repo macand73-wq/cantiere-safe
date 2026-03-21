@@ -691,7 +691,6 @@ async function saveSopralluogo() {
   });
   currentSopralluogo.rischio_generale = document.getElementById('f-rischioGenerale').value;
   currentSopralluogo.note_libere = document.getElementById('f-noteLibere').value;
-console.log('Note da salvare:', currentSopralluogo.note_libere);
 
   if (!currentSopralluogo.azienda.trim()) { toast('Inserisci il nome azienda/cantiere', 'error'); return; }
     if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
