@@ -221,7 +221,34 @@ function stripEmoji(str) {
     .replace(/[\uD800-\uDFFF]/g, '')
     .trim();
 }
+// Validazione file upload — previene upload di file non immagine
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_PHOTOS = 20;
 
+function validateImageFile(file) {
+  if (!ALLOWED_MIME.includes(file.type)) {
+    toast('Formato non supportato. Usa JPEG, PNG o WebP.', 'error');
+    return false;
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    toast('File troppo grande. Massimo 10 MB.', 'error');
+    return false;
+  }
+  return true;
+}
+
+function validateMagicBytes(file, callback) {
+  const reader = new FileReader();
+  reader.onloadend = e => {
+    const arr = new Uint8Array(e.target.result);
+    const isJpeg = arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF;
+    const isPng = arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47;
+    const isWebp = arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50;
+    callback(isJpeg || isPng || isWebp);
+  };
+  reader.readAsArrayBuffer(file.slice(0, 12));
+}
 function compressImage(file, callback) {
   const reader = new FileReader();
   reader.onload = ev => {
@@ -543,7 +570,7 @@ function toggleNascondi(id) {
 function renderChkFotos(item) {
   if (!item.foto || !item.foto.length) return '';
   return item.foto.map(p =>
-    `<img class="chk-photo-thumb" src="${p.dataUrl}" onclick="openLightboxFromChk('${item.id}','${p.id}')">`
+`<img class="chk-photo-thumb" src="${p.dataUrl}" data-item-id="${CSS.escape(item.id)}" data-photo-id="${CSS.escape(p.id)}">`
   ).join('');
 }
 
@@ -558,20 +585,29 @@ function setCommento(id, val) {
 }
 
 function handleChkPhoto(e, itemId) {
-  const item = currentSopralluogo.checklist.find(c => c.id === itemId);
+const item = currentSopralluogo.checklist.find(c => c.id === itemId);
   if (!item) return;
   if (!item.foto) item.foto = [];
+  if (item.foto.length >= MAX_PHOTOS) {
+    toast('Limite massimo di ' + MAX_PHOTOS + ' foto raggiunto.', 'error');
+    e.target.value = '';
+    return;
+  }
   [...e.target.files].forEach(file => {
-    compressImage(file, dataUrl => {
-      if (!chkPhotoCounters[itemId]) chkPhotoCounters[itemId] = 0;
-      chkPhotoCounters[itemId]++;
-      item.foto.push({
-        id: itemId + '_p' + chkPhotoCounters[itemId],
-        dataUrl,
-        timestamp: new Date().toISOString()
+    if (!validateImageFile(file)) return;
+    validateMagicBytes(file, isValid => {
+      if (!isValid) { toast('File non valido.', 'error'); return; }
+      compressImage(file, dataUrl => {
+        if (!chkPhotoCounters[itemId]) chkPhotoCounters[itemId] = 0;
+        chkPhotoCounters[itemId]++;
+        item.foto.push({
+          id: itemId + '_p' + chkPhotoCounters[itemId],
+          dataUrl,
+          timestamp: new Date().toISOString()
+        });
+        const row = document.getElementById('chkfotos-' + itemId);
+        if (row) row.innerHTML = renderChkFotos(item);
       });
-      const row = document.getElementById('chkfotos-' + itemId);
-      if (row) row.innerHTML = renderChkFotos(item);
     });
   });
   e.target.value = '';
@@ -592,7 +628,7 @@ function openLightboxFromChk(itemId, photoId) {
 function renderPhotoGrid() {
   const grid = document.getElementById('photo-grid');
   grid.innerHTML = currentSopralluogo.foto.map(p =>
-    `<img class="photo-thumb" src="${p.dataUrl}" alt="" onclick="openLightbox('${p.id}')">`
+`<img class="photo-thumb" src="${p.dataUrl}" alt="" data-photo-id="${CSS.escape(p.id)}">`
   ).join('');
   grid.innerHTML += `<label class="photo-add-btn" for="photo-input">
     <span>📷</span>
@@ -601,15 +637,24 @@ function renderPhotoGrid() {
 }
 
 function handlePhotoUpload(e) {
+if (currentSopralluogo.foto.length >= MAX_PHOTOS) {
+    toast('Limite massimo di ' + MAX_PHOTOS + ' foto raggiunto.', 'error');
+    e.target.value = '';
+    return;
+  }
   [...e.target.files].forEach(file => {
-    compressImage(file, dataUrl => {
-      photoIdCounter++;
-      currentSopralluogo.foto.push({
-        id: 'p' + photoIdCounter,
-        dataUrl,
-        timestamp: new Date().toISOString()
+    if (!validateImageFile(file)) return;
+    validateMagicBytes(file, isValid => {
+      if (!isValid) { toast('File non valido.', 'error'); return; }
+      compressImage(file, dataUrl => {
+        photoIdCounter++;
+        currentSopralluogo.foto.push({
+          id: 'p' + photoIdCounter,
+          dataUrl,
+          timestamp: new Date().toISOString()
+        });
+        renderPhotoGrid();
       });
-      renderPhotoGrid();
     });
   });
   e.target.value = '';
@@ -623,7 +668,38 @@ function openLightbox(id) {
   document.getElementById('lightbox').classList.add('open');
 }
 let currentDetailFotos = [];
+// Event delegation centralizzato per le foto — previene XSS
+document.addEventListener('click', function(e) {
+  const thumb = e.target.closest('.chk-photo-thumb, .photo-thumb');
+  if (!thumb) return;
 
+  // Foto checklist con item e photo id
+  const itemId = thumb.dataset.itemId;
+  const photoId = thumb.dataset.photoId;
+  const detailUrl = thumb.dataset.detailUrl;
+
+  if (itemId && photoId) {
+    openLightboxFromChk(itemId, photoId);
+    return;
+  }
+
+  if (detailUrl) {
+    // Foto dettaglio — cerca nelle foto della checklist
+    const allFotos = (currentSopralluogo?.checklist || [])
+      .flatMap(c => c.foto || [])
+      .concat(currentDetailFotos || []);
+    const foto = allFotos.find(p => p.id === detailUrl);
+    if (foto) {
+      document.getElementById('lightbox-img').src = foto.dataUrl;
+      document.getElementById('lightbox').classList.add('open');
+    }
+    return;
+  }
+
+  if (photoId) {
+    openLightbox(photoId);
+  }
+});
 // ═══════════════════════════════════════
 //  VOICE
 // ═══════════════════════════════════════
@@ -742,7 +818,7 @@ async function openDetail(id) {
   const luogoIcon = {cantiere:'🏗', azienda:'🏢', edificio:'🏠'}[s.luogo] || '📍';
 
   const photosHtml = (s.foto||[]).map(p =>
-    `<img class="photo-thumb" src="${p.dataUrl}" onclick="openLightbox('${p.id}')">`
+  `<img class="photo-thumb" src="${p.dataUrl}" data-photo-id="${CSS.escape(p.id)}">`
   ).join('');
 
   const cats = [...new Set((s.checklist||[]).map(c => c.categoria))];
@@ -756,7 +832,7 @@ async function openDetail(id) {
           <div class="checklist-item-text">${escHtml(c.testo)}</div>
           <span style="font-family:var(--font-display);font-size:13px;font-weight:800;color:${colorMap[c.valore]||'#64748b'}">${c.valore}</span>
           ${c.commento ? `<div style="width:100%;font-size:12px;color:var(--text-secondary);font-style:italic;margin-top:4px;">Nota: ${escHtml(c.commento)}</div>` : ''}
-          ${c.foto?.length ? `<div class="chk-foto-row" style="margin-top:6px">${c.foto.map(p=>`<img class="chk-photo-thumb" src="${p.dataUrl}" onclick="openDetailChkPhoto('${p.dataUrl}')">`).join('')}</div>` : ''}
+          ${c.foto?.length ? `<div class="chk-foto-row" style="margin-top:6px">${c.foto.map(p=>`<img class="chk-photo-thumb" src="${p.dataUrl}" data-detail-url="${p.id}">`).join('')}</div>` : ''}
         </div>`).join('')}`;
   }).join('');
 
