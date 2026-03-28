@@ -8,8 +8,8 @@
 //  Sostituisci con i tuoi valori!
 // ═══════════════════════════════════════
 
-const SUPABASE_URL = 'INSERISCI_QUI_IL_PROJECT_URL';
-const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_ANON_KEY';
+const SUPABASE_URL = 'https://couqrvfutxhvzjpwgilz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvdXFydmZ1dHhodnpqcHdnaWx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwMDY5ODksImV4cCI6MjA4OTU4Mjk4OX0.jEKMZalqAywjlFz370-BjqLep15L_V8JVwd1nOu-z_A';
 const { createClient } = window.supabase;
 const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -227,14 +227,14 @@ function compressImage(file, callback) {
   reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
-      const MAX = 600;
+      const MAX = 1024;
       let w = img.width, h = img.height;
       if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
       else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      callback(canvas.toDataURL('image/jpeg', 0.55));
+      callback(canvas.toDataURL('image/jpeg', 0.75));
     };
     img.src = ev.target.result;
   };
@@ -382,7 +382,6 @@ async function loadHome() {
  const { data, error } = await sbClient
     .from('sopralluoghi')
     .select('*')
-    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
   if (error) { toast('Errore caricamento dati', 'error'); return; }
@@ -721,7 +720,7 @@ async function saveSopralluogo() {
     if (!error) toast('Salvato', 'success');
   }
 
-  if (error) { console.error('Errore salvataggio Supabase:', error); toast('Errore: ' + error.message, 'error'); return; }
+  if (error) { toast('Errore: ' + error.message, 'error'); return; }
   await loadHome();
   showView('home');
 }
