@@ -1,13 +1,11 @@
-// CantiereSafe Service Worker v1.2
-const CACHE_NAME = 'cantiere-safe-v1.2';
+// CantiereSafe Service Worker v2.0
+const CACHE_NAME = 'cantiere-safe-v2.0';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/dexie/3.2.4/dexie.min.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -32,6 +30,11 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // Per le chiamate API Supabase vai sempre in rete
+  if (e.request.url.includes('supabase.co')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
