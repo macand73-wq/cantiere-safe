@@ -342,6 +342,13 @@ async function doLogout() {
   currentUser = null;
   currentProfile = null;
   allSopralluoghi = [];
+  // Pulizia localStorage
+  localStorage.clear();
+  // Pulizia cache Service Worker
+  if ('caches' in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.map(name => caches.delete(name)));
+  }
   document.getElementById('app-main').style.display = 'none';
   document.getElementById('view-login').style.display = 'flex';
 }
