@@ -1326,7 +1326,7 @@ function mostraNuovoCantiere() {
   });
   document.getElementById('cant-data-inizio').value = '';
   document.getElementById('cant-data-fine').value = '';
-  showView('view-form-cantiere');
+  showView('form-cantiere');
 }
 
 function modificaCantiere(id) {
@@ -1345,7 +1345,7 @@ function modificaCantiere(id) {
   document.getElementById('cant-data-inizio').value = cantiereCorrente.data_inizio || '';
   document.getElementById('cant-data-fine').value = cantiereCorrente.data_fine || '';
   document.getElementById('cant-notifica').value = cantiereCorrente.notifica_preliminare || '';
-  showView('view-form-cantiere');
+  showView('form-cantiere');
 }
 
 async function salvaCantiere() {
@@ -1374,7 +1374,7 @@ async function salvaCantiere() {
   }
   if (error) { alert('Errore salvataggio: ' + error.message); return; }
   await caricaCantieri();
-  showView('view-cantieri');
+  showView('cantieri');
 }
 
 async function eliminaCantiere(id) {
