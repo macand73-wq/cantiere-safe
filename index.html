@@ -242,6 +242,36 @@
     </div>
 
     <!-- PROFILO -->
+     <!-- CANTIERI -->
+    <div class="view" id="view-cantieri">
+      <div class="section-title">Cantieri</div>
+      <div class="section-sub">Anagrafica cantieri</div>
+      <button class="btn-primary" onclick="mostraNuovoCantiere()">+ Nuovo cantiere</button>
+      <div id="lista-cantieri" style="margin-top:16px"></div>
+    </div>
+
+    <!-- FORM NUOVO/MODIFICA CANTIERE -->
+    <div class="view" id="view-form-cantiere">
+      <div class="section-title" id="form-cantiere-titolo">Nuovo cantiere</div>
+      <div class="card">
+        <input class="input-field" id="cant-nome" placeholder="Nome cantiere *" type="text">
+        <input class="input-field" id="cant-indirizzo" placeholder="Indirizzo" type="text">
+        <input class="input-field" id="cant-comune" placeholder="Comune" type="text">
+        <input class="input-field" id="cant-committente" placeholder="Committente" type="text">
+        <input class="input-field" id="cant-impresa" placeholder="Impresa affidataria" type="text">
+        <input class="input-field" id="cant-cse" placeholder="CSE" type="text">
+        <input class="input-field" id="cant-dl" placeholder="Direttore Lavori" type="text">
+        <input class="input-field" id="cant-responsabile" placeholder="Responsabile lavori" type="text">
+        <input class="input-field" id="cant-importo" placeholder="Importo lavori (€)" type="text">
+        <label style="font-size:13px;color:var(--text-secondary)">Data inizio</label>
+        <input class="input-field" id="cant-data-inizio" type="date">
+        <label style="font-size:13px;color:var(--text-secondary)">Data fine prevista</label>
+        <input class="input-field" id="cant-data-fine" type="date">
+        <input class="input-field" id="cant-notifica" placeholder="Riferimento notifica preliminare" type="text">
+      </div>
+      <button class="btn-primary" onclick="salvaCantiere()">Salva cantiere</button>
+      <button class="btn-secondary" onclick="showView('view-cantieri')">Annulla</button>
+    </div>
     <div class="view" id="view-settings">
       <div class="section-title">Profilo</div>
       <div class="section-sub">Gestione account e impostazioni</div>
@@ -295,6 +325,10 @@
     <button class="nav-btn" data-view="export">
       <span class="nav-icon">📤</span>
       <span class="nav-label">Export</span>
+    </button>
+    <button class="nav-btn" data-view="cantieri">
+      <span class="nav-icon">🏗️</span>
+      <span class="nav-label">Cantieri</span>
     </button>
     <button class="nav-btn" data-view="settings">
       <span class="nav-icon">👤</span>

@@ -395,12 +395,21 @@ async function initApp(user) {
       if (v === 'nuovo') { initNuovoForm(); return; }
       if (v === 'export') { populateExportSelect(); showView('export'); return; }
       if (v === 'settings') { loadSettings(); showView('settings'); return; }
+      if (v === 'cantieri') { caricaCantieri(); showView('cantieri'); return; }
       showView(v);
       if (v === 'home') loadHome();
     });
   });
 
   document.getElementById('photo-input').addEventListener('change', handlePhotoUpload);
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    if (action === 'modifica-cantiere') modificaCantiere(id);
+    if (action === 'elimina-cantiere') eliminaCantiere(id);
+  });
   document.getElementById('lightbox').addEventListener('click', (e) => {
     if (e.target.id === 'lightbox' || e.target.id === 'lightbox-close') {
       document.getElementById('lightbox').classList.remove('open');
@@ -1272,3 +1281,105 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 });
+// ═══════════════════════════════════════
+//  GESTIONE CANTIERI
+// ═══════════════════════════════════════
+
+let cantieri = [];
+let cantiereCorrente = null;
+
+async function caricaCantieri() {
+  const { data, error } = await sbClient
+    .from('cantieri')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('Errore caricamento cantieri:', error); return; }
+  cantieri = data || [];
+  renderListaCantieri();
+}
+
+function renderListaCantieri() {
+  const container = document.getElementById('lista-cantieri');
+  if (!container) return;
+  if (cantieri.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-secondary);text-align:center;margin-top:24px">Nessun cantiere. Creane uno nuovo.</p>';
+    return;
+  }
+  container.innerHTML = cantieri.map(c => `
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-weight:600;font-size:16px">${c.nome}</div>
+      <div style="color:var(--text-secondary);font-size:13px">${c.comune || ''} ${c.indirizzo || ''}</div>
+      <div style="color:var(--text-secondary);font-size:13px">${c.committente ? 'Committente: ' + c.committente : ''}</div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn-secondary" style="flex:1" data-id="${c.id}" data-action="modifica-cantiere">Modifica</button>
+        <button class="btn-danger" style="flex:1" data-id="${c.id}" data-action="elimina-cantiere">Elimina</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function mostraNuovoCantiere() {
+  cantiereCorrente = null;
+  document.getElementById('form-cantiere-titolo').textContent = 'Nuovo cantiere';
+  ['nome','indirizzo','comune','committente','impresa','cse','dl','responsabile','importo','notifica'].forEach(f => {
+    document.getElementById('cant-' + f).value = '';
+  });
+  document.getElementById('cant-data-inizio').value = '';
+  document.getElementById('cant-data-fine').value = '';
+  showView('view-form-cantiere');
+}
+
+function modificaCantiere(id) {
+  cantiereCorrente = cantieri.find(c => c.id === id);
+  if (!cantiereCorrente) return;
+  document.getElementById('form-cantiere-titolo').textContent = 'Modifica cantiere';
+  document.getElementById('cant-nome').value = cantiereCorrente.nome || '';
+  document.getElementById('cant-indirizzo').value = cantiereCorrente.indirizzo || '';
+  document.getElementById('cant-comune').value = cantiereCorrente.comune || '';
+  document.getElementById('cant-committente').value = cantiereCorrente.committente || '';
+  document.getElementById('cant-impresa').value = cantiereCorrente.impresa_affidataria || '';
+  document.getElementById('cant-cse').value = cantiereCorrente.cse || '';
+  document.getElementById('cant-dl').value = cantiereCorrente.dl || '';
+  document.getElementById('cant-responsabile').value = cantiereCorrente.responsabile_lavori || '';
+  document.getElementById('cant-importo').value = cantiereCorrente.importo || '';
+  document.getElementById('cant-data-inizio').value = cantiereCorrente.data_inizio || '';
+  document.getElementById('cant-data-fine').value = cantiereCorrente.data_fine || '';
+  document.getElementById('cant-notifica').value = cantiereCorrente.notifica_preliminare || '';
+  showView('view-form-cantiere');
+}
+
+async function salvaCantiere() {
+  const nome = document.getElementById('cant-nome').value.trim();
+  if (!nome) { alert('Il nome del cantiere è obbligatorio'); return; }
+  const payload = {
+    user_id: currentUser.id,
+    nome,
+    indirizzo: document.getElementById('cant-indirizzo').value.trim(),
+    comune: document.getElementById('cant-comune').value.trim(),
+    committente: document.getElementById('cant-committente').value.trim(),
+    impresa_affidataria: document.getElementById('cant-impresa').value.trim(),
+    cse: document.getElementById('cant-cse').value.trim(),
+    dl: document.getElementById('cant-dl').value.trim(),
+    responsabile_lavori: document.getElementById('cant-responsabile').value.trim(),
+    importo: document.getElementById('cant-importo').value.trim(),
+    data_inizio: document.getElementById('cant-data-inizio').value || null,
+    data_fine: document.getElementById('cant-data-fine').value || null,
+    notifica_preliminare: document.getElementById('cant-notifica').value.trim(),
+  };
+  let error;
+  if (cantiereCorrente) {
+    ({ error } = await sbClient.from('cantieri').update(payload).eq('id', cantiereCorrente.id));
+  } else {
+    ({ error } = await sbClient.from('cantieri').insert(payload));
+  }
+  if (error) { alert('Errore salvataggio: ' + error.message); return; }
+  await caricaCantieri();
+  showView('view-cantieri');
+}
+
+async function eliminaCantiere(id) {
+  if (!confirm('Eliminare questo cantiere?')) return;
+  const { error } = await sbClient.from('cantieri').delete().eq('id', id);
+  if (error) { alert('Errore eliminazione: ' + error.message); return; }
+  await caricaCantieri();
+}
