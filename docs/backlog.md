@@ -54,7 +54,9 @@ grave del bug in se'.
 
 ## P1 — Difetti noti nel codice
 
-Gia' documentati in `AGENTS.md`, ripetuti qui per completezza del backlog.
+Verificati sul tree al commit `ee70b8d`. Questo e' l'elenco autoritativo dei difetti
+noti: `AGENTS.md` non li ripete, rimanda qui. Voci di natura architetturale (CSP con
+`unsafe-inline`, foto base64 in riga) stanno in P4.
 
 - **Annulla nel form cantiere non funziona.** `index.html:273` chiama
   `showView('view-cantieri')` invece di `showView('cantieri')`.

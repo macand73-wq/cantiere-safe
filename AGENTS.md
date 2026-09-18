@@ -114,67 +114,6 @@ Google OAuth `redirectTo` in `doGoogleLogin()` is hardcoded to a GitHub Pages UR
 (`macand73-wq.github.io/cantiere-safe/`), which does not match the Netlify
 deployment. Google sign-in is therefore expected to be broken in production.
 
-## Known problems (verified in the current tree, 2026-09-18)
-
-Ordered roughly by severity. None of these are fixed yet.
-
-1. **A real user could not save a sopralluogo or get the PDF** (reported 2026-09-17).
-   Unreproduced and unexplained; this outranks everything else here. See
-   `docs/backlog.md` B1 for the two candidate causes.
-2. **`caricaCantieri()` has no `user_id` filter.** RLS is reported active, so this is
-   a correctness and bandwidth issue, not an isolation failure.
-3. **`showView('view-cantieri')`** at `index.html:273` (the cantiere form's Annulla
-   button) passes an element id where a bare name is expected, producing
-   `#view-view-cantieri`. The button silently does nothing. Same class of bug as the
-   one fixed in `e1e856d`.
-4. **`.input-field` has no CSS.** The entire cantiere form in `index.html` uses
-   `class="input-field"`, which appears zero times in `style.css`. Those inputs render
-   unstyled. The rest of the app uses `.form-input`.
-5. **`modificaCantiere(id)` compares types.** `id` arrives from `dataset.id`, always a
-   string; `c.id` from Postgres is an integer. `c.id === id` is therefore never true,
-   so Modifica silently does nothing. Use `==` or coerce with `Number(id)`.
-6. **`btn-primary` / `btn-secondary` used without `btn`.** The cantieri views use
-   `class="btn-primary"` alone; `style.css` puts layout on `.btn` and only color on
-   `.btn-primary`. Elsewhere the app correctly writes `class="btn btn-primary"`.
-   `.btn-secondary` is not defined in `style.css` at all.
-7. **Photos as base64 in jsonb.** A 20-photo inspection is several MB in a single row,
-   fetched in full by `loadHome()`'s `select('*')` on every home view. This will not
-   scale; Supabase Storage plus a URL reference is the fix.
-8. **`loadHome()` selects everything.** `select('*')` pulls every photo blob just to
-   render summary cards. The list only needs the scalar columns.
-9. **CSP allows `'unsafe-inline'` for scripts,** which it must, because every handler
-   is an inline `onclick`. The CSP is therefore much weaker than it looks.
-10. **`clearAllData()` deletes only `sopralluoghi`,** not `cantieri`, despite the UI
-   saying "Elimina tutti i dati".
-
-## Credential history
-
-Commits `f429f67` through HEAD (25 of 30) carry a Supabase project URL and anon key,
-in `app.js` up to `420267f` and in `old/app.js` after that. **That key was rotated
-months ago and is inert**, so this is a historical artifact, not an exposure.
-
-`old/` was deleted from the tree rather than scrubbed from history: rewriting 25 of 30
-commits to remove a dead string would break every existing clone for no security gain,
-and `origin` (`macand73-wq/cantiere-safe`) is not ours to force-push. Do not "clean up"
-this history without a reason better than tidiness, and never without the repo owner's
-agreement.
-
-The anon key is public by design in any case, it ships to every browser. Its safety
-rests entirely on row-level security, which is why the RLS audit above matters and the
-key's secrecy does not.
-
-Because history was left intact, the old implementation is still fully retrievable:
-
-```
-git show 88e7cd4:old/app.js > old-app.js   # inspect
-git checkout 88e7cd4 -- old/               # restore
-git log --follow -- old/app.js             # full lineage, back to v1.1 at 7411a9c
-```
-
-`--follow` traces it through the rename, so every version from `7411a9c` (v1.1)
-onwards is reachable. Deleting it forward-only rather than rewriting history was the
-point: the owner keeps the historical copy.
-
 ## Conventions
 
 - Vanilla JS, no framework, no build step beyond the key injection. Keep it that way
@@ -186,20 +125,22 @@ point: the owner keeps the historical copy.
 - Conventional-commit prefixes (`feat:`, `fix:`) appear in recent history; follow that.
 - `escHtml()` on every interpolated user value. No exceptions.
 
-## Backlog
+## Further reading
 
-`docs/backlog.md` merges the owner's status report and a real user's nine-point
-review (written by someone with CSE domain expertise) into a prioritised list.
-Read it before picking up feature work. The top item is a reported save failure that
-has not been reproduced.
+Kept out of this file on purpose, so it stays short enough to read at the start of
+every session. Consult when the task calls for it:
 
-## Backend migration
-
-The maintainer is exploring a move off Supabase and Netlify. Assessment in
-`docs/migrazione-backend.md`: feasible, Netlify is hours of work, Supabase is weeks.
-Nothing is decided and no migration work has started. The blocker is that the project
-has no server code at all, so authorization lives entirely in Postgres RLS policies;
-leaving Supabase means writing a backend that does not exist today.
+- **`docs/backlog.md`** — prioritised work list, merging the owner's status report
+  and a real user's nine-point review. **Includes the authoritative list of known
+  bugs in the current tree.** Read before picking up any feature or bugfix work.
+  Top item is a reported save failure that has not been reproduced.
+- **`docs/migrazione-backend.md`** — assessment of moving off Supabase and Netlify.
+  Exploratory, nothing decided. Short version: Netlify is hours, Supabase is weeks,
+  and the blocker is that authorization lives entirely in Postgres RLS because the
+  project has no server code.
+- **`docs/credenziali-history.md`** — why a rotated Supabase key still appears in
+  history and why it was deliberately not rewritten. Read before anyone proposes
+  "cleaning up" the git history.
 
 ## Licensing
 
