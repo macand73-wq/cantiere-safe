@@ -195,6 +195,18 @@ function showView(name) {
   if (btn) btn.classList.add('active');
 }
 
+// Rete di sicurezza: senza questo, un'eccezione dentro un gestore onclick
+// finisce solo in console e il pulsante sembra inerte. E' il motivo per cui
+// piu' di un difetto di questa applicazione e' rimasto invisibile.
+window.addEventListener('error', (e) => {
+  console.error('Errore non gestito:', e.error || e.message);
+  toast('Errore imprevisto. Riprova o ricarica la pagina.', 'error');
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Promise non gestita:', e.reason);
+  toast('Errore imprevisto. Riprova o ricarica la pagina.', 'error');
+});
+
 function toast(msg, type = '') {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -787,9 +799,13 @@ async function saveSopralluogo() {
   currentSopralluogo.rischio_generale = document.getElementById('f-rischioGenerale').value;
   currentSopralluogo.note_libere = document.getElementById('f-noteLibere').value;
 
+  if (!currentUser) {
+    toast('Sessione scaduta. Accedi di nuovo per salvare.', 'error');
+    return;
+  }
   if (!currentSopralluogo.azienda.trim()) { toast('Inserisci il nome azienda/cantiere', 'error'); return; }
-    if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
-  
+  if (!currentSopralluogo.data) { toast('Inserisci la data', 'error'); return; }
+
 
   const payload = {
     user_id: currentUser.id,
@@ -806,16 +822,32 @@ async function saveSopralluogo() {
     updated_at: new Date().toISOString()
   };
 
+  const btn = document.querySelector('#view-nuovo .btn-primary');
+  const etichetta = btn?.textContent;
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
+
   let error;
-  if (currentSopralluogo.id) {
-    ({ error } = await sbClient.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
-    if (!error) toast('Aggiornato', 'success');
-  } else {
-    ({ error } = await sbClient.from('sopralluoghi').insert(payload));
-    if (!error) toast('Salvato', 'success');
+  try {
+    if (currentSopralluogo.id) {
+      ({ error } = await sbClient.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
+    } else {
+      ({ error } = await sbClient.from('sopralluoghi').insert(payload));
+    }
+  } catch (e) {
+    // Una fetch fallita non produce error ma lancia: senza questo ramo il
+    // salvataggio fallirebbe di nuovo in silenzio.
+    console.error('Errore di rete nel salvataggio:', e);
+    error = { message: 'Rete non raggiungibile' };
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = etichetta; }
   }
 
-  if (error) { console.error('Errore salvataggio Supabase:', error); toast('Errore: ' + error.message, 'error'); return; }
+  if (error) {
+    console.error('Errore salvataggio Supabase:', error);
+    toast('Salvataggio fallito: ' + error.message, 'error');
+    return;
+  }
+  toast(currentSopralluogo.id ? 'Sopralluogo aggiornato' : 'Sopralluogo salvato', 'success');
   await loadHome();
   showView('home');
 }
@@ -826,7 +858,7 @@ async function saveSopralluogo() {
 
 async function openDetail(id) {
   const s = allSopralluoghi.find(x => x.id === id);
-  if (!s) return;
+  if (!s) { toast('Sopralluogo non trovato', 'error'); return; }
   currentDetailFotos = s.foto || [];
 
   const visibili = (s.checklist||[]).filter(c => !c.nascosta && c.testo);
@@ -888,7 +920,7 @@ function openDetailChkPhoto(dataUrl) {
 
 async function editSopralluogo(id) {
   const s = allSopralluoghi.find(x => x.id === id);
-  if (!s) return;
+  if (!s) { toast('Sopralluogo non trovato', 'error'); return; }
   currentSopralluogo = JSON.parse(JSON.stringify(s));
   currentSopralluogo.note_libere = s.note_libere || '';
   photoIdCounter = s.foto?.length || 0;

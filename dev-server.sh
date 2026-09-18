@@ -47,7 +47,8 @@ pulisci() {
 }
 trap pulisci EXIT INT TERM
 
-"$DOCROOT/dev-proxy.py" 8080 >/dev/null 2>&1 &
+LOG="${LOG:-$TLS_DIR/richieste.log}"
+"$DOCROOT/dev-proxy.py" 8080 >>"$LOG" 2>&1 &
 socat OPENSSL-LISTEN:8443,cert="$TLS_DIR/server.pem",verify=0,reuseaddr,fork \
   TCP:127.0.0.1:8080 >/dev/null 2>&1 &
 
@@ -70,6 +71,8 @@ cat <<INFO
 
   Impronta della CA:
 $(openssl x509 -in "$TLS_DIR/ca.crt" -noout -fingerprint -sha256 | sed 's/^/    /')
+
+  Log delle richieste: $LOG
 
   Ctrl-C per fermare tutto.
 

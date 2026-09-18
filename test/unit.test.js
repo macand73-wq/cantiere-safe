@@ -112,3 +112,63 @@ describe('formatDate', () => {
     assert.strictEqual(app.formatDate(''), '-');
   });
 });
+
+describe('saveSopralluogo', () => {
+  const { loadAppConDom } = require('./helper.js');
+
+  function preparaForm(amb, { azienda = 'Costruzioni Prova', data = '2026-09-18' } = {}) {
+    amb.ctx.initNuovoForm();
+    amb.els['f-azienda'].value = azienda;
+    amb.els['f-data'].value = data;
+  }
+
+  test('senza sessione avvisa invece di fallire in silenzio', async () => {
+    // I gestori onclick sono nell'HTML, quindi attivi anche prima che
+    // initApp() abbia impostato currentUser: e' la finestra in cui il
+    // salvataggio moriva con un TypeError visibile solo in console.
+    const amb = loadAppConDom();
+    preparaForm(amb);
+    await amb.ctx.saveSopralluogo();
+    assert.strictEqual(amb.richieste.length, 0, 'non deve chiamare il backend');
+    assert.match(amb.toasts.join(' '), /[Ss]essione/, `nessun avviso: ${JSON.stringify(amb.toasts)}`);
+  });
+
+  test('con sessione valida invia i dati e conferma', async () => {
+    const amb = loadAppConDom();
+    amb.valuta("currentUser={id:'11111111-1111-1111-1111-111111111111'}");
+    preparaForm(amb);
+    await amb.ctx.saveSopralluogo();
+    assert.strictEqual(amb.richieste.length, 1, 'deve inviare una insert');
+    assert.strictEqual(amb.richieste[0].tabella, 'sopralluoghi');
+    assert.strictEqual(amb.richieste[0].payload.azienda, 'Costruzioni Prova');
+    assert.match(amb.toasts.join(' '), /salvat/i, 'manca la conferma');
+  });
+
+  test('senza azienda avvisa e non salva', async () => {
+    const amb = loadAppConDom();
+    amb.valuta("currentUser={id:'11111111-1111-1111-1111-111111111111'}");
+    preparaForm(amb, { azienda: '   ' });
+    await amb.ctx.saveSopralluogo();
+    assert.strictEqual(amb.richieste.length, 0);
+    assert.match(amb.toasts.join(' '), /azienda/i);
+  });
+
+  test('un errore del backend viene mostrato, non ingoiato', async () => {
+    const amb = loadAppConDom();
+    amb.valuta("currentUser={id:'11111111-1111-1111-1111-111111111111'}");
+    amb.valuta("sbClient.from=()=>({insert:async()=>({error:{message:'colonna mancante'}})})");
+    preparaForm(amb);
+    await amb.ctx.saveSopralluogo();
+    assert.match(amb.toasts.join(' '), /colonna mancante/, `l'errore non arriva all'utente: ${JSON.stringify(amb.toasts)}`);
+  });
+
+  test('una fetch che lancia non fallisce in silenzio', async () => {
+    // Senza il try/catch questo caso non produceva ne' error ne' messaggio.
+    const amb = loadAppConDom();
+    amb.valuta("currentUser={id:'11111111-1111-1111-1111-111111111111'}");
+    amb.valuta("sbClient.from=()=>({insert:async()=>{throw new Error('rete giu')}})");
+    preparaForm(amb);
+    await amb.ctx.saveSopralluogo();
+    assert.match(amb.toasts.join(' '), /fallito|rete/i, `nessun avviso: ${JSON.stringify(amb.toasts)}`);
+  });
+});

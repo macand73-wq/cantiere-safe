@@ -87,11 +87,29 @@ segnalatore esterno aveva riportato esattamente questo al punto 7.
 
 **Intervento proposto:**
 
-1. Avvolgere i gestori collegati a `onclick` in modo che un'eccezione diventi un
-   messaggio visibile, non solo una riga in console.
-2. Dare un riscontro a ogni azione che scrive: in corso, riuscita, fallita.
-3. Disabilitare il pulsante mentre l'operazione e' in corso.
-4. Trasformare i `return` silenziosi che sono vicoli ciechi in messaggi.
+1. ~~Rete di sicurezza globale per le eccezioni non gestite.~~ FATTO: gestori
+   `error` e `unhandledrejection` su `window` mostrano un toast invece di
+   lasciare l'errore nella sola console.
+2. ~~Riscontro sul salvataggio del sopralluogo.~~ FATTO: messaggio di conferma,
+   messaggio di errore col motivo, pulsante disabilitato durante l'operazione.
+3. ~~Vicoli ciechi silenziosi in `openDetail()` e `editSopralluogo()`.~~ FATTO.
+4. **Da fare:** stesso trattamento per export, foto e dettatura vocale. Gli
+   exporter in particolare non dicono nulla se jsPDF fallisce.
+5. **Da fare:** indicazione di attesa sulle operazioni lente, soprattutto
+   l'export PDF con molte foto.
+
+### Causa del salvataggio fallito del 2026-09-18
+
+Riprodotta e corretta. I gestori `onclick` sono scritti nell'HTML, quindi sono
+attivi da subito, mentre `currentUser` viene impostato solo da `initApp()`.
+Esiste percio' una finestra in cui il form e' compilabile ma la sessione non e'
+pronta: ripristino lento della sessione, ricarica della pagina, token scaduto.
+In quella finestra `saveSopralluogo()` lanciava
+`TypeError: Cannot read properties of null (reading 'id')` alla riga del
+payload, l'eccezione moriva in console e il pulsante sembrava inerte.
+
+Coperto da `test/unit.test.js`, che verifica anche il caso opposto: con sessione
+valida la insert parte e arriva la conferma.
 
 ## P1 — Difetti noti nel codice
 
