@@ -138,9 +138,10 @@ every session. Consult when the task calls for it:
   Exploratory, nothing decided. Short version: Netlify is hours, Supabase is weeks,
   and the blocker is that authorization lives entirely in Postgres RLS because the
   project has no server code.
-- **`docs/credenziali-history.md`** — why a rotated Supabase key still appears in
-  history and why it was deliberately not rewritten. Read before anyone proposes
-  "cleaning up" the git history.
+- **`docs/credenziali-history.md`** — the Supabase anon key in git history is the
+  same one serving production, and was **not** rotated despite a report that it had
+  been. It is public by design, so this is not an incident, but it makes verifying
+  RLS in the dashboard a priority. Read before anyone proposes rewriting history.
 
 ## Licensing
 

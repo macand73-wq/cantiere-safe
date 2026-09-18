@@ -1,28 +1,68 @@
 # Storia delle credenziali nel repository
 
-Commits `f429f67` through HEAD (25 of 30) carry a Supabase project URL and anon key,
-in `app.js` up to `420267f` and in `old/app.js` after that. **That key was rotated
-months ago and is inert**, so this is a historical artifact, not an exposure.
+**Verificato il 2026-09-18 contro il deploy in produzione.** Correggere questo
+documento se la situazione cambia, e non fidarsi di quanto riportato a voce: la
+versione precedente di questa pagina affermava che la chiave fosse stata ruotata, ed
+era falso.
 
-`old/` was deleted from the tree rather than scrubbed from history: rewriting 25 of 30
-commits to remove a dead string would break every existing clone for no security gain,
-and `origin` (`macand73-wq/cantiere-safe`) is not ours to force-push. Do not "clean up"
-this history without a reason better than tidiness, and never without the repo owner's
-agreement.
+## Situazione di fatto
 
-The anon key is public by design in any case, it ships to every browser. Its safety
-rests entirely on row-level security, not on the key staying secret. The owner reports
-RLS is active on all tables (2026-09-17); there are no migrations in this repo, so
-that is worth confirming in the dashboard rather than assuming.
+I commit da `f429f67` a HEAD (25 su 30) contengono URL e anon key del progetto
+Supabase, in `app.js` fino a `420267f` e in `old/app.js` da li' in poi.
 
-Because history was left intact, the old implementation is still fully retrievable:
+La chiave presente nella history **non e' stata ruotata**. E' identica byte per byte a
+quella che serve la produzione oggi:
+
+- project ref `couqrvfutxhvzjpwgilz`, lo stesso nella history e nel deploy;
+- JWT `role: anon`, emesso il 2026-03-20, valido fino al 2036-03-19;
+- confronto eseguito fra `3876b5b:old/app.js` e
+  `https://visionary-chaja-09e4ff.netlify.app/app.js`.
+
+## Perche' non e' un incidente
+
+L'anon key di Supabase e' **pubblica per progetto**: viene inclusa nel JavaScript
+servito a ogni visitatore, e' visibile a chiunque apra il sito con gli strumenti di
+sviluppo. Non e' un segreto e non e' mai stata pensata per esserlo.
+
+Di conseguenza la history di git non e' la fonte dell'esposizione: lo e' il sito
+stesso, per necessita' di funzionamento. Rimuovere la chiave dai commit non
+cambierebbe nulla finche' la stessa identica stringa viene servita a ogni caricamento
+di pagina.
+
+## Perche' la history non e' stata riscritta
+
+`old/` e' stato rimosso dal tree con una semplice cancellazione, senza toccare la
+history. Le ragioni, in ordine:
+
+1. **Non ci sarebbe alcun guadagno di sicurezza.** La chiave e' pubblica per
+   progettazione e comunque servita in produzione.
+2. Riscrivere 25 commit su 30 romperebbe ogni clone esistente.
+3. `origin` (`macand73-wq/cantiere-safe`) non e' nostro: un force-push va concordato
+   col proprietario.
+4. La copia storica dell'implementazione precedente ha valore per il proprietario, e
+   una riscrittura la distruggerebbe proprio mentre cerca di "ripulire".
+
+Non riscrivere questa history senza una ragione migliore del decoro, e mai senza
+l'accordo del proprietario.
+
+## Cosa conta davvero
+
+La sicurezza dell'anon key non dipende dalla sua segretezza ma **interamente dalle
+policy RLS** su Postgres. Il proprietario riferisce (2026-09-17) che RLS e' attivo su
+tutte le tabelle. Quella affermazione non e' stata verificata direttamente, e in
+questo repository non esistono migrazioni da ispezionare.
+
+Dato che un'altra affermazione sulla sicurezza di questo progetto, la rotazione della
+chiave, non ha retto alla verifica, **le policy RLS vanno controllate nella dashboard
+Supabase e non date per buone.** E' l'unica cosa che separa i dati di un utente da
+quelli di un altro.
+
+## Recupero della vecchia implementazione
+
+La history e' intatta, quindi `old/app.js` resta interamente recuperabile:
 
 ```
 git show 88e7cd4:old/app.js > old-app.js   # inspect
 git checkout 88e7cd4 -- old/               # restore
-git log --follow -- old/app.js             # full lineage, back to v1.1 at 7411a9c
+git log --follow -- old/app.js             # lineage completo, fino a v1.1 in 7411a9c
 ```
-
-`--follow` traces it through the rename, so every version from `7411a9c` (v1.1)
-onwards is reachable. Deleting it forward-only rather than rewriting history was the
-point: the owner keeps the historical copy.
