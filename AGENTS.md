@@ -79,19 +79,25 @@ code; verify against the live project before relying on it.
   creates it.
 - **`sopralluoghi`** — `id`, `user_id`, `azienda`, `cantiere`, `indirizzo`, `rspp`,
   `luogo`, `data`, `rischio_generale`, `note_libere`, `checklist` (jsonb),
-  `foto` (jsonb), `created_at`, `updated_at`.
+  `foto` (jsonb), `cantiere_id`, `created_at`, `updated_at`.
+  `id` is an integer, not a uuid: `loadHome()` interpolates it unquoted into
+  `onclick="openDetail(${s.id})"`, which only parses for a number.
+  **`cantiere_id` exists in the database but is referenced nowhere in `app.js`** —
+  the cantieri/sopralluoghi link is half-built. Whether `updated_at` actually exists
+  is unconfirmed and is a suspect in the save failure, see `docs/backlog.md` B1.
 - **`cantieri`** — `id`, `user_id`, `nome`, `indirizzo`, `comune`, `committente`,
   `impresa_affidataria`, `cse`, `dl`, `responsabile_lavori`, `importo`,
   `data_inizio`, `data_fine`, `notifica_preliminare`, `created_at`.
 
 Queries on `sopralluoghi` filter `.eq('user_id', currentUser.id)` in the client.
-`caricaCantieri()` does **not** filter by user, so cantieri isolation depends entirely
-on a row-level-security policy existing server-side. Confirm RLS is on for both
-tables; the client-side filter is not a security boundary.
+`caricaCantieri()` does **not** filter by user. The project owner reports (2026-09-17)
+that **RLS is active on all tables**, so this is a correctness and bandwidth problem
+rather than a data leak, but the client-side filter was never the security boundary
+in either case. Worth confirming in the dashboard, as there are no migrations here.
 
-`sopralluoghi` and `cantieri` are not linked by a foreign key. The cantieri anagrafica
-is currently a standalone list; a sopralluogo still stores a free-text `azienda` and
-`cantiere`. Joining the two is the obvious next feature.
+The cantieri anagrafica is still effectively standalone in the UI: a sopralluogo
+stores free-text `azienda` and `cantiere`, and nothing writes `cantiere_id`. Wiring
+that up is the highest-value next feature, see `docs/backlog.md` U1.
 
 ## Deploy
 
@@ -112,30 +118,33 @@ deployment. Google sign-in is therefore expected to be broken in production.
 
 Ordered roughly by severity. None of these are fixed yet.
 
-1. **`caricaCantieri()` has no `user_id` filter.** If RLS is not enforcing isolation,
-   every user sees every cantiere.
-2. **`showView('view-cantieri')`** at `index.html:273` (the cantiere form's Annulla
+1. **A real user could not save a sopralluogo or get the PDF** (reported 2026-09-17).
+   Unreproduced and unexplained; this outranks everything else here. See
+   `docs/backlog.md` B1 for the two candidate causes.
+2. **`caricaCantieri()` has no `user_id` filter.** RLS is reported active, so this is
+   a correctness and bandwidth issue, not an isolation failure.
+3. **`showView('view-cantieri')`** at `index.html:273` (the cantiere form's Annulla
    button) passes an element id where a bare name is expected, producing
    `#view-view-cantieri`. The button silently does nothing. Same class of bug as the
    one fixed in `e1e856d`.
-3. **`.input-field` has no CSS.** The entire cantiere form in `index.html` uses
+4. **`.input-field` has no CSS.** The entire cantiere form in `index.html` uses
    `class="input-field"`, which appears zero times in `style.css`. Those inputs render
    unstyled. The rest of the app uses `.form-input`.
-4. **`modificaCantiere(id)` compares types.** `id` arrives from `dataset.id`, always a
-   string; `c.id` from Postgres is a number (or uuid). `c.id === id` fails for numeric
-   ids, so Modifica silently does nothing. Use `==` or coerce.
-5. **`btn-primary` / `btn-secondary` used without `btn`.** The cantieri views use
+5. **`modificaCantiere(id)` compares types.** `id` arrives from `dataset.id`, always a
+   string; `c.id` from Postgres is an integer. `c.id === id` is therefore never true,
+   so Modifica silently does nothing. Use `==` or coerce with `Number(id)`.
+6. **`btn-primary` / `btn-secondary` used without `btn`.** The cantieri views use
    `class="btn-primary"` alone; `style.css` puts layout on `.btn` and only color on
    `.btn-primary`. Elsewhere the app correctly writes `class="btn btn-primary"`.
    `.btn-secondary` is not defined in `style.css` at all.
-6. **Photos as base64 in jsonb.** A 20-photo inspection is several MB in a single row,
+7. **Photos as base64 in jsonb.** A 20-photo inspection is several MB in a single row,
    fetched in full by `loadHome()`'s `select('*')` on every home view. This will not
    scale; Supabase Storage plus a URL reference is the fix.
-7. **`loadHome()` selects everything.** `select('*')` pulls every photo blob just to
+8. **`loadHome()` selects everything.** `select('*')` pulls every photo blob just to
    render summary cards. The list only needs the scalar columns.
-8. **CSP allows `'unsafe-inline'` for scripts,** which it must, because every handler
+9. **CSP allows `'unsafe-inline'` for scripts,** which it must, because every handler
    is an inline `onclick`. The CSP is therefore much weaker than it looks.
-9. **`clearAllData()` deletes only `sopralluoghi`,** not `cantieri`, despite the UI
+10. **`clearAllData()` deletes only `sopralluoghi`,** not `cantieri`, despite the UI
    saying "Elimina tutti i dati".
 
 ## Credential history
@@ -176,6 +185,13 @@ point: the owner keeps the historical copy.
   code in the matching section rather than at the end of the file.
 - Conventional-commit prefixes (`feat:`, `fix:`) appear in recent history; follow that.
 - `escHtml()` on every interpolated user value. No exceptions.
+
+## Backlog
+
+`docs/backlog.md` merges the owner's status report and a real user's nine-point
+review (written by someone with CSE domain expertise) into a prioritised list.
+Read it before picking up feature work. The top item is a reported save failure that
+has not been reproduced.
 
 ## Backend migration
 
