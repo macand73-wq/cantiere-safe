@@ -46,10 +46,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(502, 'Backend non raggiungibile')
 
     def _rispondi(self, stato, intestazioni, corpo):
-        self.send_response(stato)
+        # send_response() aggiunge gia' Server e Date. Ricopiando anche quelli
+        # del backend la risposta ne conteneva due di ciascuno: curl lo
+        # tollera, i browser rifiutano la risposta e la fetch fallisce con un
+        # errore di rete generico. E' il motivo per cui il salvataggio non
+        # partiva dal telefono mentre da riga di comando funzionava.
+        self.send_response_only(stato)
         for k, v in intestazioni.items():
-            if k.lower() not in SALTA and k.lower() != 'content-length':
+            if k.lower() not in SALTA and k.lower() not in ('content-length', 'date', 'server'):
                 self.send_header(k, v)
+        self.send_header('Server', 'cantiere-safe-dev-proxy')
+        self.send_header('Date', self.date_time_string())
         self.send_header('Content-Length', str(len(corpo)))
         self.end_headers()
         self.wfile.write(corpo)
