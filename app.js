@@ -259,14 +259,28 @@ function validateMagicBytes(file, callback) {
     const isJpeg = arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF;
     const isPng = arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47;
     const isWebp = arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50;
-    callback(isJpeg || isPng || isWebp);
+    // HEIC/HEIF: box 'ftyp' a offset 4. ALLOWED_MIME li accetta gia', ma senza
+    // questo controllo una foto scattata da un Android recente veniva scartata
+    // come non valida. Se poi il browser non sa decodificarla se ne occupa
+    // l'onerror di compressImage, con un messaggio esplicito.
+    const isHeif = arr[4] === 0x66 && arr[5] === 0x74 && arr[6] === 0x79 && arr[7] === 0x70;
+    callback(isJpeg || isPng || isWebp || isHeif);
   };
   reader.readAsArrayBuffer(file.slice(0, 12));
 }
-function compressImage(file, callback) {
+function compressImage(file, callback, onError) {
+  const fallita = (motivo) => {
+    console.error('Compressione immagine fallita:', motivo, file.name, file.type);
+    if (onError) onError(motivo);
+  };
   const reader = new FileReader();
+  reader.onerror = () => fallita('lettura del file non riuscita');
   reader.onload = ev => {
     const img = new Image();
+    // Senza questo, un formato che il browser non sa decodificare (tipicamente
+    // HEIC dalle fotocamere Android e iPhone) non produce nulla: niente foto e
+    // nessun messaggio.
+    img.onerror = () => fallita('formato non supportato dal browser');
     img.onload = () => {
       const MAX = 600;
       let w = img.width, h = img.height;
@@ -637,7 +651,7 @@ const item = currentSopralluogo.checklist.find(c => c.id === itemId);
         });
         const row = document.getElementById('chkfotos-' + itemId);
         if (row) row.innerHTML = renderChkFotos(item);
-      });
+      }, motivo => toast('Foto non aggiunta: ' + motivo, 'error'));
     });
   });
   e.target.value = '';
@@ -684,7 +698,7 @@ if (currentSopralluogo.foto.length >= MAX_PHOTOS) {
           timestamp: new Date().toISOString()
         });
         renderPhotoGrid();
-      });
+      }, motivo => toast('Foto non aggiunta: ' + motivo, 'error'));
     });
   });
   e.target.value = '';
@@ -826,12 +840,21 @@ async function saveSopralluogo() {
   const etichetta = btn?.textContent;
   if (btn) { btn.disabled = true; btn.textContent = 'Salvataggio...'; }
 
+  // Se la richiesta non torna mai, il pulsante resterebbe bloccato su
+  // "Salvataggio..." senza spiegazione: e' successo davvero in prova su
+  // telefono. Meglio interrompere e dirlo.
+  const conTimeout = (promessa, ms = 30000) => Promise.race([
+    promessa,
+    new Promise((_, rifiuta) => setTimeout(
+      () => rifiuta(new Error('tempo scaduto, controlla la connessione')), ms)),
+  ]);
+
   let error;
   try {
     if (currentSopralluogo.id) {
-      ({ error } = await sbClient.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id));
+      ({ error } = await conTimeout(sbClient.from('sopralluoghi').update(payload).eq('id', currentSopralluogo.id)));
     } else {
-      ({ error } = await sbClient.from('sopralluoghi').insert(payload));
+      ({ error } = await conTimeout(sbClient.from('sopralluoghi').insert(payload)));
     }
   } catch (e) {
     // Una fetch fallita non produce error ma lancia: senza questo ramo il

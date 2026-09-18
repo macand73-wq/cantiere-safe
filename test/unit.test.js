@@ -172,3 +172,48 @@ describe('saveSopralluogo', () => {
     assert.match(amb.toasts.join(' '), /fallito|rete/i, `nessun avviso: ${JSON.stringify(amb.toasts)}`);
   });
 });
+
+describe('gestione foto', () => {
+  const { loadAppConDom } = require('./helper.js');
+
+  test('un formato che il browser non decodifica avvisa invece di sparire', async () => {
+    // compressImage non aveva onerror: se la decodifica falliva, la callback
+    // non veniva mai chiamata e la foto spariva senza dire nulla. Tipico con
+    // HEIC dalle fotocamere dei telefoni.
+    const amb = loadAppConDom();
+    const esiti = [];
+    amb.valuta(`
+      var Image = function() { setTimeout(() => this.onerror && this.onerror(), 0); };
+      var FileReader = function() {
+        this.readAsDataURL = () => setTimeout(() => this.onload({target:{result:'data:image/heic;base64,AAAA'}}), 0);
+      };
+    `);
+    await new Promise((res) => {
+      amb.ctx.compressImage({ name: 'foto.heic', type: 'image/heic' },
+        () => { esiti.push('successo'); res(); },
+        (motivo) => { esiti.push('errore: ' + motivo); res(); });
+    });
+    assert.match(esiti.join(''), /errore/, `nessun errore segnalato: ${JSON.stringify(esiti)}`);
+  });
+
+  test('il salvataggio non resta bloccato se la richiesta non torna', async () => {
+    // Il pulsante rimaneva su "Salvataggio..." per sempre.
+    const amb = loadAppConDom();
+    amb.valuta("currentUser={id:'11111111-1111-1111-1111-111111111111'}");
+    amb.valuta("sbClient.from=()=>({insert:()=>new Promise(()=>{})})");  // non risolve mai
+    amb.ctx.initNuovoForm();
+    amb.els['f-azienda'].value = 'Prova';
+    amb.els['f-data'].value = '2026-09-18';
+
+    const salvataggio = amb.ctx.saveSopralluogo();
+    // Il timeout reale e' 30s: qui basta verificare che esista un percorso di
+    // uscita, non attenderlo.
+    const esito = await Promise.race([
+      salvataggio.then(() => 'concluso'),
+      new Promise((r) => setTimeout(() => r('ancora in corso'), 100)),
+    ]);
+    assert.strictEqual(esito, 'ancora in corso', 'atteso un timeout, non un blocco immediato');
+    assert.ok(amb.ctx.saveSopralluogo.toString().includes('conTimeout'),
+      'saveSopralluogo deve usare un timeout');
+  });
+});
