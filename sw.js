@@ -34,7 +34,7 @@ self.addEventListener('fetch', (e) => {
   // stack locale di sviluppo (127.0.0.1:54321), altrimenti una risposta vecchia
   // resta servita per sempre e l'interfaccia mostra dati che non esistono piu'.
   const url = new URL(e.request.url);
-  if (url.hostname.endsWith('supabase.co') || url.port === '54321') {
+  if (url.hostname.endsWith('supabase.co') || url.port === '54321' || url.port === '54443') {
     e.respondWith(fetch(e.request));
     return;
   }

@@ -11,10 +11,46 @@ container e' il binario `supabase` in `~/bin/`.
 
 ```
 supabase start          # prima volta: scarica ~3 GB di immagini
-python3 -m http.server 8080 --bind 127.0.0.1
+./dev-server.sh
 ```
 
-Poi aprire `http://127.0.0.1:8080`.
+`dev-server.sh` avvia il server statico in HTTP e HTTPS e un proxy TLS davanti a
+Supabase, e stampa gli indirizzi da usare. Poi aprire `http://127.0.0.1:8080`.
+
+### Prova da telefono
+
+Il telefono raggiunge l'ambiente sull'indirizzo di rete della macchina. Due
+possibilita':
+
+| | Indirizzo | Limiti |
+|---|---|---|
+| HTTP | `http://<ip>:8080` | Niente fotocamera, niente service worker |
+| HTTPS | `https://<ip>:8443` | Completo, richiede la CA installata |
+
+Fotocamera e service worker sono ammessi solo in **contesto sicuro**. `localhost`
+e' esentato per convenzione, un indirizzo IP di rete no: da telefono servono
+quindi certificati veri, non basta l'HTTP.
+
+`dev-server.sh` genera una CA locale e un certificato per l'IP della macchina
+(in `~/.cache/cantiere-safe-tls/`, riusati alle esecuzioni successive). Per
+fidarsene, una volta sola sul telefono:
+
+1. aprire `http://<ip>:8080/dev-ca.crt`;
+2. installarlo come **certificato CA** (Android: Impostazioni, Sicurezza,
+   Cifratura e credenziali, Installa un certificato, Certificato CA);
+3. aprire `https://<ip>:8443`.
+
+Lo script stampa l'impronta SHA-256 della CA: confrontarla al momento
+dell'installazione.
+
+**Questa CA e' per lo sviluppo.** Chi la possiede puo' emettere certificati che
+quel telefono considera validi. Vive solo sulla macchina di sviluppo e va
+rimossa dal telefono quando non serve piu'. Non va copiata altrove ne'
+versionata: `dev-ca.crt` e' in `.gitignore`.
+
+Finche' i server sono attivi, chiunque sia sulla stessa rete li raggiunge. Lo
+stack locale non ha limiti di frequenza e usa le chiavi demo pubbliche di
+Supabase: va bene su una rete domestica fidata, non su una condivisa.
 
 Per fermare tutto:
 
@@ -27,7 +63,9 @@ supabase stop --no-backup   # elimina anche il volume
 
 | Servizio | URL |
 |---|---|
-| App | http://127.0.0.1:8080 |
+| App (HTTP) | http://127.0.0.1:8080, e `http://<ip>:8080` dalla rete |
+| App (HTTPS) | `https://<ip>:8443` |
+| API via TLS | `https://<ip>:54443` |
 | API (Kong) | http://127.0.0.1:54321 |
 | Postgres | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 | Studio (UI web) | http://127.0.0.1:54323 |
@@ -39,7 +77,10 @@ browser. Comodo per provare la registrazione senza una casella vera.
 ## Configurazione
 
 `config.local.js` (non versionato, vedi `.gitignore`) definisce
-`window.CANTIERE_CONFIG`, e `app.js` lo usa se presente:
+`window.CANTIERE_CONFIG`, e `app.js` lo usa se presente. Host e porta del
+backend sono dedotti dalla pagina, quindi lo stesso file vale per desktop,
+telefono in HTTP e telefono in HTTPS senza modifiche: in HTTPS punta a 54443,
+perche' una pagina sicura non puo' chiamare un'API in chiaro.
 
 ```js
 const SUPABASE_URL = window.CANTIERE_CONFIG?.SUPABASE_URL || 'INSERISCI_QUI_IL_PROJECT_URL';
