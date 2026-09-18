@@ -54,10 +54,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(corpo)
 
+    def end_headers(self):
+        # In sviluppo il browser non deve mai servire una copia vecchia: senza
+        # questo serve un "hard reload", che su telefono non esiste come gesto.
+        if not self.path.startswith(PREFIX):
+            self.send_header('Cache-Control', 'no-store, must-revalidate')
+        super().end_headers()
+
     def do_GET(self):
         if self.path.startswith(PREFIX):
             return self._proxy()
         return super().do_GET()
+
+    def do_HEAD(self):
+        if self.path.startswith(PREFIX):
+            return self._proxy()
+        return super().do_HEAD()
 
     def do_POST(self):
         return self._proxy() if self.path.startswith(PREFIX) else self.send_error(405)
