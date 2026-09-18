@@ -52,6 +52,47 @@ grave del bug in se'.
 
 ---
 
+## P0b — Nessun riscontro visibile delle azioni (trasversale)
+
+Segnalato dal lead dev il 2026-09-18, dopo che un salvataggio di sopralluogo e'
+fallito senza dire nulla: *"This is recurring with this app, there's no
+confirmation for your actions anywhere."*
+
+Non e' un difetto singolo ma una caratteristica sistemica, ed e' la ragione per
+cui ogni diagnosi di questa sessione ha richiesto di leggere i log del server o
+di interrogare Postgres. Un utente in cantiere non ha nessuno dei due.
+
+**Constatazioni sul codice:**
+
+- **Zero blocchi `try` in tutto `app.js`** (1400 righe). Qualunque eccezione
+  interrompe il gestore senza che nulla arrivi a schermo: con un handler
+  `onclick` l'errore finisce in console e il pulsante sembra semplicemente
+  inerte. E' il caso del salvataggio fallito qui sopra.
+- **Decine di `return` silenziosi.** Alcuni sono guardie legittime, altri sono
+  vicoli ciechi: `openDetail()` e `editSopralluogo()` escono senza dire niente
+  se non trovano la riga, `handleChkPhoto()` se non trova la voce di checklist.
+- **Nessuna indicazione di attesa.** Salvataggio ed export non mostrano che
+  un'operazione e' in corso: su rete lenta, cioe' in cantiere, l'utente non sa
+  se il tocco e' stato registrato e ripreme.
+- **Messaggistica incoerente.** I cantieri usavano `alert()`, il resto
+  `toast()`, e alcuni percorsi solo `console.error`. Parzialmente sistemato in
+  `9f38090`, ma non in modo uniforme.
+- **Nessuna protezione contro il doppio invio.** Il pulsante resta attivo
+  durante la richiesta.
+
+**Perche' conta piu' di quanto sembri:** l'app produce un verbale che ha valore
+documentale. Un utente che crede di aver salvato un sopralluogo e non l'ha
+fatto perde il lavoro di un'ispezione intera, e se ne accorge in ufficio. Il
+segnalatore esterno aveva riportato esattamente questo al punto 7.
+
+**Intervento proposto:**
+
+1. Avvolgere i gestori collegati a `onclick` in modo che un'eccezione diventi un
+   messaggio visibile, non solo una riga in console.
+2. Dare un riscontro a ogni azione che scrive: in corso, riuscita, fallita.
+3. Disabilitare il pulsante mentre l'operazione e' in corso.
+4. Trasformare i `return` silenziosi che sono vicoli ciechi in messaggi.
+
 ## P1 — Difetti noti nel codice
 
 Verificati sul tree al commit `ee70b8d`. Questo e' l'elenco autoritativo dei difetti
