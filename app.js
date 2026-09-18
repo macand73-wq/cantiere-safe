@@ -195,16 +195,91 @@ function showView(name) {
   if (btn) btn.classList.add('active');
 }
 
+// ═══════════════════════════════════════
+//  DIAGNOSTICA
+// ═══════════════════════════════════════
+//
+// Un solo punto di passaggio per gli errori. Serve perche' l'applicazione
+// falliva in silenzio: l'utente vedeva un pulsante inerte e chi doveva
+// correggere non aveva nulla su cui lavorare. Su un telefono, dove la console
+// non e' raggiungibile, il problema e' totale.
+//
+// Tre destinazioni per ogni errore:
+//   1. un messaggio leggibile all'utente, con il motivo reale;
+//   2. la console, per chi sviluppa da desktop;
+//   3. un registro in memoria, consultabile dal Profilo e inviabile al server
+//      di sviluppo quando la diagnostica e' attiva.
+
+const LOG_MAX = 50;
+const logEventi = [];
+
+// Il reporting verso il server e' solo per sviluppo: config.local.js non
+// esiste in produzione, quindi resta spento senza bisogno di altri controlli.
+const DIAGNOSTICA_REMOTA = !!window.CANTIERE_CONFIG?.LOG_ENDPOINT;
+
+function registraEvento(livello, contesto, dettaglio) {
+  const voce = {
+    quando: new Date().toISOString(),
+    livello,
+    contesto,
+    dettaglio: descriviErrore(dettaglio),
+  };
+  logEventi.push(voce);
+  if (logEventi.length > LOG_MAX) logEventi.shift();
+
+  const inConsole = livello === 'error' ? console.error : console.warn;
+  inConsole(`[${contesto}]`, dettaglio);
+
+  if (DIAGNOSTICA_REMOTA) inviaAlServer(voce);
+  return voce;
+}
+
+// Gli oggetti errore di fetch, PostgREST e GoTrue hanno forme diverse: senza
+// questo, un messaggio utile finiva spesso stampato come "[object Object]".
+function descriviErrore(e) {
+  if (e == null) return 'nessun dettaglio';
+  if (typeof e === 'string') return e;
+  const parti = [];
+  if (e.message) parti.push(e.message);
+  if (e.code) parti.push(`codice ${e.code}`);
+  if (e.status) parti.push(`HTTP ${e.status}`);
+  if (e.hint) parti.push(`suggerimento: ${e.hint}`);
+  if (e.details) parti.push(String(e.details));
+  if (!parti.length) {
+    try { return JSON.stringify(e); } catch { return String(e); }
+  }
+  return parti.join(' — ');
+}
+
+function inviaAlServer(voce) {
+  try {
+    // keepalive: la richiesta parte anche se la pagina viene chiusa subito
+    // dopo l'errore.
+    fetch(window.CANTIERE_CONFIG.LOG_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...voce, agente: navigator.userAgent }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch { /* la diagnostica non deve mai rompere l'applicazione */ }
+}
+
+// Da usare ovunque al posto di `toast('Errore...')`: l'utente vede il motivo,
+// e il motivo finisce anche nel registro.
+function segnalaErrore(contesto, errore, messaggioUtente) {
+  const voce = registraEvento('error', contesto, errore);
+  toast((messaggioUtente || contesto) + ': ' + voce.dettaglio, 'error');
+}
+
 // Rete di sicurezza: senza questo, un'eccezione dentro un gestore onclick
-// finisce solo in console e il pulsante sembra inerte. E' il motivo per cui
-// piu' di un difetto di questa applicazione e' rimasto invisibile.
+// finisce solo in console e il pulsante sembra inerte.
 window.addEventListener('error', (e) => {
-  console.error('Errore non gestito:', e.error || e.message);
-  toast('Errore imprevisto. Riprova o ricarica la pagina.', 'error');
+  registraEvento('error', 'errore non gestito', e.error || e.message);
+  toast('Errore imprevisto: ' + descriviErrore(e.error || e.message), 'error');
 });
 window.addEventListener('unhandledrejection', (e) => {
-  console.error('Promise non gestita:', e.reason);
-  toast('Errore imprevisto. Riprova o ricarica la pagina.', 'error');
+  registraEvento('error', 'promise non gestita', e.reason);
+  toast('Errore imprevisto: ' + descriviErrore(e.reason), 'error');
 });
 
 function toast(msg, type = '') {
