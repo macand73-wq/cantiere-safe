@@ -154,6 +154,18 @@ The anon key is public by design in any case, it ships to every browser. Its saf
 rests entirely on row-level security, which is why the RLS audit above matters and the
 key's secrecy does not.
 
+Because history was left intact, the old implementation is still fully retrievable:
+
+```
+git show 88e7cd4:old/app.js > old-app.js   # inspect
+git checkout 88e7cd4 -- old/               # restore
+git log --follow -- old/app.js             # full lineage, back to v1.1 at 7411a9c
+```
+
+`--follow` traces it through the rename, so every version from `7411a9c` (v1.1)
+onwards is reachable. Deleting it forward-only rather than rewriting history was the
+point: the owner keeps the historical copy.
+
 ## Conventions
 
 - Vanilla JS, no framework, no build step beyond the key injection. Keep it that way
