@@ -58,7 +58,7 @@ Verificati sul tree al commit `ee70b8d`. Questo e' l'elenco autoritativo dei dif
 noti: `AGENTS.md` non li ripete, rimanda qui. Voci di natura architetturale (CSP con
 `unsafe-inline`, foto base64 in riga) stanno in P4.
 
-- ~~**Annulla nel form cantiere non funziona.**~~ RISOLTO (`b8e4f2c`): passava un id
+- ~~**Annulla nel form cantiere non funziona.**~~ RISOLTO (`e5c394c`): passava un id
   di elemento a `showView()`, che vuole il nome nudo.
 - ~~**Modifica cantiere non funziona.**~~ RISOLTO: `dataset.id` e' una stringa,
   `c.id` un intero, quindi `===` non era mai vero. Ora `Number(id)`, anche in
