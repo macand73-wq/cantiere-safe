@@ -72,9 +72,16 @@ noti: `AGENTS.md` non li ripete, rimanda qui. Voci di natura architetturale (CSP
   interpolava `nome`, `comune`, `indirizzo` e `committente` senza `escHtml()`. Un
   nome di cantiere come `<img src=x onerror=...>` veniva eseguito a ogni render.
   Trovato mentre si sistemavano le classi dei pulsanti, nella stessa funzione.
-- **`caricaCantieri()` non filtra per `user_id`.** Andrea conferma RLS attivo su
-  tutte le tabelle, quindi non e' una falla di isolamento, ma la query resta
-  scorretta e va allineata alle altre.
+- ~~**`caricaCantieri()` non filtra per `user_id`.**~~ RISOLTO: aggiunto il filtro,
+  come nelle query su `sopralluoghi`. RLS copriva l'isolamento, ma affidarsi a un
+  solo livello e' esattamente il presupposto che in questo progetto si e' gia'
+  rivelato fragile.
+- ~~**Service worker: le API passavano dalla cache in sviluppo.**~~ RISOLTO: il
+  bypass verificava la stringa `supabase.co`, quindi non copriva lo stack locale su
+  `127.0.0.1:54321`. Una lista vuota veniva memorizzata e riservita per sempre: un
+  cantiere salvato correttamente (POST 201) non compariva mai a schermo. Il controllo
+  ora usa `hostname`/`port`, ed e' anche piu' stretto del precedente `includes()`,
+  che avrebbe accettato un dominio simile come `evil-supabase.co.attacker.net`.
 - **`clearAllData()` non cancella i cantieri**, pur dichiarando "elimina tutti i dati".
 - **`loadHome()` fa `select('*')`** e scarica ogni foto per disegnare le schede
   riassuntive: ~13 MB su 10 sopralluoghi pieni, su un'app da usare in cantiere da

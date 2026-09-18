@@ -1,5 +1,5 @@
-// CantiereSafe Service Worker v2.0
-const CACHE_NAME = 'cantiere-safe-v2.0';
+// CantiereSafe Service Worker v2.1
+const CACHE_NAME = 'cantiere-safe-v2.1';
 const ASSETS = [
   './',
   './index.html',
@@ -30,8 +30,11 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-  // Per le chiamate API Supabase vai sempre in rete
-  if (e.request.url.includes('supabase.co')) {
+  // Le chiamate API non vanno mai in cache: ne' Supabase in produzione, ne' lo
+  // stack locale di sviluppo (127.0.0.1:54321), altrimenti una risposta vecchia
+  // resta servita per sempre e l'interfaccia mostra dati che non esistono piu'.
+  const url = new URL(e.request.url);
+  if (url.hostname.endsWith('supabase.co') || url.port === '54321') {
     e.respondWith(fetch(e.request));
     return;
   }

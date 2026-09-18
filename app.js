@@ -1291,11 +1291,17 @@ let cantieri = [];
 let cantiereCorrente = null;
 
 async function caricaCantieri() {
+  if (!currentUser) return;
   const { data, error } = await sbClient
     .from('cantieri')
     .select('*')
+    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
-  if (error) { console.error('Errore caricamento cantieri:', error); return; }
+  if (error) {
+    console.error('Errore caricamento cantieri:', error);
+    toast('Errore caricamento cantieri', 'error');
+    return;
+  }
   cantieri = data || [];
   renderListaCantieri();
 }
@@ -1352,7 +1358,7 @@ function modificaCantiere(id) {
 
 async function salvaCantiere() {
   const nome = document.getElementById('cant-nome').value.trim();
-  if (!nome) { alert('Il nome del cantiere è obbligatorio'); return; }
+  if (!nome) { toast('Il nome del cantiere è obbligatorio', 'error'); return; }
   const payload = {
     user_id: currentUser.id,
     nome,
@@ -1374,7 +1380,8 @@ async function salvaCantiere() {
   } else {
     ({ error } = await sbClient.from('cantieri').insert(payload));
   }
-  if (error) { alert('Errore salvataggio: ' + error.message); return; }
+  if (error) { console.error('Errore salvataggio cantiere:', error); toast('Errore: ' + error.message, 'error'); return; }
+  toast(cantiereCorrente ? 'Cantiere aggiornato' : 'Cantiere salvato', 'success');
   await caricaCantieri();
   showView('cantieri');
 }
@@ -1382,6 +1389,7 @@ async function salvaCantiere() {
 async function eliminaCantiere(id) {
   if (!confirm('Eliminare questo cantiere?')) return;
   const { error } = await sbClient.from('cantieri').delete().eq('id', Number(id));
-  if (error) { alert('Errore eliminazione: ' + error.message); return; }
+  if (error) { console.error('Errore eliminazione cantiere:', error); toast('Errore: ' + error.message, 'error'); return; }
+  toast('Cantiere eliminato', 'error');
   await caricaCantieri();
 }
