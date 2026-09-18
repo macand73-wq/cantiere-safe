@@ -59,6 +59,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # questo serve un "hard reload", che su telefono non esiste come gesto.
         if not self.path.startswith(PREFIX):
             self.send_header('Cache-Control', 'no-store, must-revalidate')
+            # Un service worker registrato puo' servire i file dalla propria
+            # cache scavalcando le intestazioni HTTP. L'unico modo per farlo
+            # aggiornare e' che sw.js stesso arrivi sempre dalla rete.
+            if self.path.rstrip('/').endswith('sw.js'):
+                self.send_header('Service-Worker-Allowed', '/')
         super().end_headers()
 
     def do_GET(self):

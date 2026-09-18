@@ -1,5 +1,5 @@
-// CantiereSafe Service Worker v2.1
-const CACHE_NAME = 'cantiere-safe-v2.1';
+// CantiereSafe Service Worker v2.2
+const CACHE_NAME = 'cantiere-safe-v2.2';
 const ASSETS = [
   './',
   './index.html',
@@ -38,21 +38,27 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(fetch(e.request));
     return;
   }
+  // Rete prima, cache come riserva.
+  //
+  // Prima era il contrario: `if (cached) return cached` serviva app.js dalla
+  // cache per sempre, senza mai richiedere la versione nuova. In sviluppo
+  // significa provare codice vecchio senza accorgersene, ed e' costata diverse
+  // diagnosi sbagliate. In produzione significa che un utente resta su una
+  // versione con difetti gia' corretti finche' non cambia CACHE_NAME.
+  //
+  // Con questa strategia l'app resta comunque utilizzabile offline: se la rete
+  // non risponde si ricade sulla copia in cache.
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
+    fetch(e.request).then(response => {
+      if (response && response.status === 200 && response.type !== 'opaque') {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
-        return response;
-      }).catch(() => {
-        if (e.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      }
+      return response;
+    }).catch(() =>
+      caches.match(e.request).then(cached =>
+        cached || (e.request.destination === 'document' ? caches.match('./index.html') : undefined)
+      )
+    )
   );
 });

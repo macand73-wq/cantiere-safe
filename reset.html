@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reimposta CantiereSafe</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0f1923; color:#e2e8f0;
+           padding:24px; line-height:1.6; }
+    button { background:#f59e0b; color:#0a1118; border:0; border-radius:8px;
+             padding:14px 20px; font-size:16px; font-weight:700; width:100%;
+             margin-top:16px; }
+    pre { background:#1e293b; padding:12px; border-radius:8px; font-size:13px;
+          white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Reimposta</h1>
+  <p>Rimuove il service worker e svuota la cache. Serve quando l'app resta su
+     una versione vecchia del codice.</p>
+  <button onclick="pulisci()">Rimuovi service worker e cache</button>
+  <pre id="esito">Pronto.</pre>
+  <script>
+    async function pulisci() {
+      const out = document.getElementById('esito');
+      const righe = [];
+      try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) { await r.unregister(); righe.push('service worker rimosso'); }
+        if (!regs.length) righe.push('nessun service worker registrato');
+        const nomi = await caches.keys();
+        for (const n of nomi) { await caches.delete(n); righe.push('cache eliminata: ' + n); }
+        if (!nomi.length) righe.push('nessuna cache');
+        righe.push('', 'Fatto. Torna all\'app e ricarica.');
+      } catch (e) {
+        righe.push('Errore: ' + e.message);
+      }
+      out.textContent = righe.join('\n');
+    }
+  </script>
+</body>
+</html>
