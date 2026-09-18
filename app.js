@@ -1309,12 +1309,12 @@ function renderListaCantieri() {
   }
   container.innerHTML = cantieri.map(c => `
     <div class="card" style="margin-bottom:12px">
-      <div style="font-weight:600;font-size:16px">${c.nome}</div>
-      <div style="color:var(--text-secondary);font-size:13px">${c.comune || ''} ${c.indirizzo || ''}</div>
-      <div style="color:var(--text-secondary);font-size:13px">${c.committente ? 'Committente: ' + c.committente : ''}</div>
+      <div style="font-weight:600;font-size:16px">${escHtml(c.nome)}</div>
+      <div style="color:var(--text-secondary);font-size:13px">${escHtml(c.comune || '')} ${escHtml(c.indirizzo || '')}</div>
+      <div style="color:var(--text-secondary);font-size:13px">${c.committente ? 'Committente: ' + escHtml(c.committente) : ''}</div>
       <div style="margin-top:8px;display:flex;gap:8px">
-        <button class="btn-secondary" style="flex:1" data-id="${c.id}" data-action="modifica-cantiere">Modifica</button>
-        <button class="btn-danger" style="flex:1" data-id="${c.id}" data-action="elimina-cantiere">Elimina</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" data-id="${c.id}" data-action="modifica-cantiere">Modifica</button>
+        <button class="btn btn-danger btn-sm" style="flex:1" data-id="${c.id}" data-action="elimina-cantiere">Elimina</button>
       </div>
     </div>
   `).join('');
@@ -1332,7 +1332,7 @@ function mostraNuovoCantiere() {
 }
 
 function modificaCantiere(id) {
-  cantiereCorrente = cantieri.find(c => c.id === id);
+  cantiereCorrente = cantieri.find(c => c.id === Number(id));
   if (!cantiereCorrente) return;
   document.getElementById('form-cantiere-titolo').textContent = 'Modifica cantiere';
   document.getElementById('cant-nome').value = cantiereCorrente.nome || '';
@@ -1381,7 +1381,7 @@ async function salvaCantiere() {
 
 async function eliminaCantiere(id) {
   if (!confirm('Eliminare questo cantiere?')) return;
-  const { error } = await sbClient.from('cantieri').delete().eq('id', id);
+  const { error } = await sbClient.from('cantieri').delete().eq('id', Number(id));
   if (error) { alert('Errore eliminazione: ' + error.message); return; }
   await caricaCantieri();
 }

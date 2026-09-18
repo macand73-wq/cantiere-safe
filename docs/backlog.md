@@ -58,14 +58,20 @@ Verificati sul tree al commit `ee70b8d`. Questo e' l'elenco autoritativo dei dif
 noti: `AGENTS.md` non li ripete, rimanda qui. Voci di natura architetturale (CSP con
 `unsafe-inline`, foto base64 in riga) stanno in P4.
 
-- **Annulla nel form cantiere non funziona.** `index.html:273` chiama
-  `showView('view-cantieri')` invece di `showView('cantieri')`.
-- **Modifica cantiere non funziona.** `modificaCantiere()` (`app.js:1333`) confronta
-  `c.id === id` dove `id` arriva da `dataset.id` come stringa e `c.id` e' numerico.
-- **Form cantiere senza stile.** La classe `.input-field` non esiste in `style.css`.
-  Il resto dell'app usa `.form-input`.
-- **`.btn-secondary` non definita**, e i pulsanti cantieri usano `btn-primary` senza
-  la classe `btn` che porta il layout.
+- ~~**Annulla nel form cantiere non funziona.**~~ RISOLTO (`b8e4f2c`): passava un id
+  di elemento a `showView()`, che vuole il nome nudo.
+- ~~**Modifica cantiere non funziona.**~~ RISOLTO: `dataset.id` e' una stringa,
+  `c.id` un intero, quindi `===` non era mai vero. Ora `Number(id)`, anche in
+  `eliminaCantiere()` che aveva lo stesso difetto.
+- ~~**Form cantiere senza stile.**~~ RISOLTO: 12 occorrenze di `.input-field`, classe
+  inesistente, sostituite con `.form-input` gia' usata dal resto dell'app.
+- ~~**`.btn-secondary` non definita.**~~ RISOLTO: i pulsanti cantieri ora usano
+  `btn btn-primary` / `btn btn-ghost` / `btn btn-danger`, classi gia' presenti in
+  `style.css`. Nessun CSS nuovo aggiunto.
+- ~~**XSS immagazzinato nella lista cantieri.**~~ RISOLTO: `renderListaCantieri()`
+  interpolava `nome`, `comune`, `indirizzo` e `committente` senza `escHtml()`. Un
+  nome di cantiere come `<img src=x onerror=...>` veniva eseguito a ogni render.
+  Trovato mentre si sistemavano le classi dei pulsanti, nella stessa funzione.
 - **`caricaCantieri()` non filtra per `user_id`.** Andrea conferma RLS attivo su
   tutte le tabelle, quindi non e' una falla di isolamento, ma la query resta
   scorretta e va allineata alle altre.
