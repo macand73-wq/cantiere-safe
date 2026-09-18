@@ -177,6 +177,14 @@ point: the owner keeps the historical copy.
 - Conventional-commit prefixes (`feat:`, `fix:`) appear in recent history; follow that.
 - `escHtml()` on every interpolated user value. No exceptions.
 
+## Backend migration
+
+The maintainer is exploring a move off Supabase and Netlify. Assessment in
+`docs/migrazione-backend.md`: feasible, Netlify is hours of work, Supabase is weeks.
+Nothing is decided and no migration work has started. The blocker is that the project
+has no server code at all, so authorization lives entirely in Postgres RLS policies;
+leaving Supabase means writing a backend that does not exist today.
+
 ## Licensing
 
 No license yet. The maintainer has not settled this with the project owner, so do not
