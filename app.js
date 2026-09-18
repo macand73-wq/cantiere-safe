@@ -8,8 +8,10 @@
 //  Sostituisci con i tuoi valori!
 // ═══════════════════════════════════════
 
-const SUPABASE_URL = 'INSERISCI_QUI_IL_PROJECT_URL';
-const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_ANON_KEY';
+// I segnaposto vengono sostituiti da build.js in fase di deploy.
+// In locale, config.local.js (non versionato) ha la precedenza: vedi README.
+const SUPABASE_URL = window.CANTIERE_CONFIG?.SUPABASE_URL || 'INSERISCI_QUI_IL_PROJECT_URL';
+const SUPABASE_ANON_KEY = window.CANTIERE_CONFIG?.SUPABASE_ANON_KEY || 'INSERISCI_QUI_LA_ANON_KEY';
 const { createClient } = window.supabase;
 const sbClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
