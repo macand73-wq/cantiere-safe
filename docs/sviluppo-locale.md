@@ -25,20 +25,30 @@ possibilita':
 | | Indirizzo | Limiti |
 |---|---|---|
 | HTTP | `http://<ip>:8080` | Niente fotocamera, niente service worker |
-| HTTPS | `https://<ip>:8443` | Completo, richiede la CA installata |
+| HTTPS | `https://<ip>:8443` | Completo |
 
 Fotocamera e service worker sono ammessi solo in **contesto sicuro**. `localhost`
 e' esentato per convenzione, un indirizzo IP di rete no: da telefono servono
 quindi certificati veri, non basta l'HTTP.
 
 `dev-server.sh` genera una CA locale e un certificato per l'IP della macchina
-(in `~/.cache/cantiere-safe-tls/`, riusati alle esecuzioni successive). Per
-fidarsene, una volta sola sul telefono:
+(in `~/.cache/cantiere-safe-tls/`, riusati alle esecuzioni successive).
+
+**Supabase e' servito sotto `/api/` sulla stessa origine della pagina**, non su
+una porta separata. Questo e' il punto importante: un'origine diversa ha un
+certificato diverso, e se il browser non si fida di quel certificato ogni
+`fetch` fallisce con `NetworkError`, senza mostrare alcun avviso. Accettare
+l'eccezione sulla pagina non copre l'API su un'altra porta.
+
+Su **Firefox per Android** basta accettare l'avviso una volta: quel browser usa
+un proprio archivio di certificati e **ignora la CA di sistema**, quindi
+installarla non serve a nulla.
+
+Su **Chrome**, per evitare l'avviso, si puo' installare la CA:
 
 1. aprire `http://<ip>:8080/dev-ca.crt`;
-2. installarlo come **certificato CA** (Android: Impostazioni, Sicurezza,
-   Cifratura e credenziali, Installa un certificato, Certificato CA);
-3. aprire `https://<ip>:8443`.
+2. installarlo come **certificato CA** (Impostazioni, Sicurezza, Cifratura e
+   credenziali, Installa un certificato, Certificato CA).
 
 Lo script stampa l'impronta SHA-256 della CA: confrontarla al momento
 dell'installazione.
@@ -65,7 +75,7 @@ supabase stop --no-backup   # elimina anche il volume
 |---|---|
 | App (HTTP) | http://127.0.0.1:8080, e `http://<ip>:8080` dalla rete |
 | App (HTTPS) | `https://<ip>:8443` |
-| API via TLS | `https://<ip>:54443` |
+| API (stessa origine) | `<origine>/api/`, inoltrata a 54321 |
 | API (Kong) | http://127.0.0.1:54321 |
 | Postgres | `postgresql://postgres:postgres@127.0.0.1:54322/postgres` |
 | Studio (UI web) | http://127.0.0.1:54323 |
@@ -78,9 +88,9 @@ browser. Comodo per provare la registrazione senza una casella vera.
 
 `config.local.js` (non versionato, vedi `.gitignore`) definisce
 `window.CANTIERE_CONFIG`, e `app.js` lo usa se presente. Host e porta del
-backend sono dedotti dalla pagina, quindi lo stesso file vale per desktop,
-telefono in HTTP e telefono in HTTPS senza modifiche: in HTTPS punta a 54443,
-perche' una pagina sicura non puo' chiamare un'API in chiaro.
+backend e' `${location.origin}/api`, quindi lo stesso file vale per desktop,
+telefono in HTTP e telefono in HTTPS senza modifiche, e non ci sono problemi di
+contenuto misto o di certificati per una seconda origine.
 
 ```js
 const SUPABASE_URL = window.CANTIERE_CONFIG?.SUPABASE_URL || 'INSERISCI_QUI_IL_PROJECT_URL';

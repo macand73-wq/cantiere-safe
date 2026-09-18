@@ -47,11 +47,9 @@ pulisci() {
 }
 trap pulisci EXIT INT TERM
 
-python3 -m http.server 8080 --bind 0.0.0.0 --directory "$DOCROOT" >/dev/null 2>&1 &
+"$DOCROOT/dev-proxy.py" 8080 >/dev/null 2>&1 &
 socat OPENSSL-LISTEN:8443,cert="$TLS_DIR/server.pem",verify=0,reuseaddr,fork \
   TCP:127.0.0.1:8080 >/dev/null 2>&1 &
-socat OPENSSL-LISTEN:54443,cert="$TLS_DIR/server.pem",verify=0,reuseaddr,fork \
-  TCP:127.0.0.1:54321 >/dev/null 2>&1 &
 
 sleep 1
 cat <<INFO
@@ -59,15 +57,18 @@ cat <<INFO
   App
     desktop   http://127.0.0.1:8080
     telefono  http://$LAN_IP:8080          (senza fotocamera ne' service worker)
-              https://$LAN_IP:8443         (completo, richiede la CA installata)
+              https://$LAN_IP:8443         (completo)
 
-  Per il telefono, una volta sola:
+  Supabase e' servito sotto /api/ sulla stessa origine, non su una porta a
+  parte: cosi' c'e' un solo certificato da accettare.
+
+  Su Firefox per Android basta accettare l'avviso di sicurezza una volta:
+  quel browser ignora la CA di sistema, quindi installarla non serve.
+  Su Chrome, per evitare l'avviso, si puo' installare la CA:
     1. apri  http://$LAN_IP:8080/dev-ca.crt
-    2. installa il certificato come CA (Android: Impostazioni, Sicurezza,
-       Cifratura e credenziali, Installa un certificato, Certificato CA)
-    3. apri  https://$LAN_IP:8443
+    2. installala come Certificato CA
 
-  Impronta della CA, da confrontare al momento dell'installazione:
+  Impronta della CA:
 $(openssl x509 -in "$TLS_DIR/ca.crt" -noout -fingerprint -sha256 | sed 's/^/    /')
 
   Ctrl-C per fermare tutto.
