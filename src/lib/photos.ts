@@ -101,15 +101,15 @@ export interface PhotoDraft {
   filename?: string
 }
 
-// Monotonic id for draft photos. Fixed width keeps the ids the same length, so
-// no id is a prefix of another: PocketBase appends a random suffix to the base
-// name, and matching is done on `id + '_'` (see matchUploadedFilenames). Names
-// shorter than 3 chars get an extra random prefix from the server, so the base
-// must stay >= 3 chars.
+// Unique token per draft photo. Date.now + Math.random make it unique across
+// page loads, so a fresh session can never recycle a token that collides with a
+// stale persisted filename; the counter guards against same-millisecond
+// collisions within a session. All alphanumeric, so PocketBase's sanitisation
+// and `matchUploadedFilenames` (which splits on the last `_`) stay unambiguous.
 let clientSeq = 0
 export function nextClientId(): string {
   clientSeq += 1
-  return `p${String(clientSeq).padStart(10, '0')}`
+  return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}${clientSeq.toString(36)}`
 }
 
 // The deterministic upload name for a pending photo. PocketBase keeps the base
@@ -119,16 +119,27 @@ export function uploadName(clientId: string): string {
   return `${clientId}.jpg`
 }
 
-// Matches server-returned filenames to pending client ids by their deterministic
-// prefix (`clientId + '_'`). Existing filenames are left out of the result.
+// Matches server-returned filenames to pending client ids by their exact base
+// name (the unique upload token), never by a short prefix that a stale filename
+// from a previous session could share. Existing filenames therefore can never
+// be matched to a new upload.
 export function matchUploadedFilenames(
   returned: string[],
   clientIds: string[],
 ): Map<string, string> {
   const map = new Map<string, string>()
   for (const id of clientIds) {
-    const found = returned.find((name) => name.startsWith(`${id}_`))
+    const found = returned.find((name) => uploadedBase(name) === id)
     if (found) map.set(id, found)
   }
   return map
+}
+
+// PocketBase stores an upload as `<base>_<random10>.<ext>` (base >= 3 chars).
+// Strip both to recover the exact base the client sent.
+function uploadedBase(name: string): string {
+  const dot = name.lastIndexOf('.')
+  const stem = dot > 0 ? name.slice(0, dot) : name
+  const us = stem.lastIndexOf('_')
+  return us > 0 ? stem.slice(0, us) : stem
 }

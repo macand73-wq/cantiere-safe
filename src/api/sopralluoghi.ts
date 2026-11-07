@@ -50,8 +50,9 @@ export interface SopralluogoDraft {
   generalPhotos: PhotoDraft[]
 }
 
-// Serializes a draft item to the persisted shape. Pending photos keep their
-// client id as a placeholder that `saveSopralluogo` resolves after upload.
+// Serializes a draft item to the persisted shape. Pending uploads map to '' and
+// are dropped, so the first round-trip never persists an unresolvable client-id
+// placeholder; only already-known filenames are written.
 function itemForServer(item: ChecklistItemDraft): ChecklistItem {
   return {
     id: item.id,
@@ -60,17 +61,30 @@ function itemForServer(item: ChecklistItemDraft): ChecklistItem {
     ...(item.personalizzabile ? { personalizzabile: true } : {}),
     valore: item.valore,
     commento: item.commento,
-    foto: item.foto.map((p) => p.filename ?? p.clientId),
+    foto: item.foto.map((p) => p.filename ?? '').filter(Boolean),
     nascosta: item.nascosta,
+  }
+}
+
+// Thrown when the finalize update (step 2) fails after the record and its files
+// were already written. Carries the record id so the caller can retry as an
+// update instead of creating a duplicate.
+export class SopralluogoSaveError extends Error {
+  constructor(message: string, readonly recordId: string) {
+    super(message)
+    this.name = 'SopralluogoSaveError'
   }
 }
 
 // Creates or updates a sopralluogo with its photos. PocketBase replaces the
 // file selection on update unless existing filenames are re-submitted, and it
 // appends a random suffix to uploaded names, so the path here:
-//  1. sends existing filenames plus renamed new Files (one shared `foto` list),
-//  2. maps returned filenames back to their owners by a deterministic prefix,
-//  3. re-saves the checklist with the resolved filenames when new photos exist.
+//  1. writes existing filenames plus renamed new Files, with per-item photo refs
+//     left EMPTY (no placeholders),
+//  2. maps the returned filenames back to their owners by their unique token,
+//  3. mutates the draft's pending photos into persisted filenames so a retry
+//     re-submits filenames (not the files), then finalizes the checklist refs.
+// A failed step 3 throws SopralluogoSaveError; retry resumes as an update.
 export async function saveSopralluogo(draft: SopralluogoDraft): Promise<Sopralluogo> {
   const ordered = [...draft.generalPhotos, ...draft.checklist.flatMap((i) => i.foto)]
 
@@ -78,12 +92,10 @@ export async function saveSopralluogo(draft: SopralluogoDraft): Promise<Soprallu
     p.file ? new File([p.file], uploadName(p.clientId), { type: p.file.type }) : (p.filename as string),
   )
 
-  const checklist = draft.checklist.map(itemForServer)
-
   const body: SopralluogoInput = {
     ...draft.fields,
     cantiere: draft.fields.cantiere || undefined,
-    checklist,
+    checklist: draft.checklist.map(itemForServer),
     foto: fotoField,
   }
 
@@ -95,10 +107,26 @@ export async function saveSopralluogo(draft: SopralluogoDraft): Promise<Soprallu
   if (newIds.length === 0) return record
 
   const resolved = matchUploadedFilenames(record.foto, newIds)
-  const resolvedChecklist = checklist.map((item) => ({
-    ...item,
-    foto: item.foto.map((key) => resolved.get(key) ?? key),
-  }))
+  for (const id of newIds) {
+    if (!resolved.has(id)) throw new Error('photo filename resolution failed')
+  }
 
-  return updateSopralluogo(record.id, { checklist: resolvedChecklist, foto: record.foto })
+  // Mark the uploaded photos as persisted in place: these objects are shared
+  // with the form state, so a retry rebuilds the draft with filenames and does
+  // not re-upload the files.
+  for (const p of ordered) {
+    if (p.file) {
+      p.filename = resolved.get(p.clientId)
+      p.file = undefined
+    }
+  }
+
+  try {
+    return await updateSopralluogo(record.id, {
+      checklist: draft.checklist.map(itemForServer),
+      foto: record.foto,
+    })
+  } catch (e) {
+    throw new SopralluogoSaveError(e instanceof Error ? e.message : String(e), record.id)
+  }
 }

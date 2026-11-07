@@ -71,7 +71,7 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import { useSopralluoghiStore } from '../stores/sopralluoghi'
 import { useCantieriStore } from '../stores/cantieri'
-import { photoUrl, type SopralluogoDraft } from '../api/sopralluoghi'
+import { photoUrl, SopralluogoSaveError, type SopralluogoDraft } from '../api/sopralluoghi'
 import {
   cloneChecklist,
   checklistForLuogo,
@@ -107,6 +107,9 @@ const loading = ref(false)
 const loadError = ref('')
 const saveError = ref('')
 const saving = ref(false)
+// Record id from a partial save whose finalize failed; a retry must update it,
+// not create a duplicate.
+const retryId = ref<string | undefined>(undefined)
 
 const totalPhotos = computed(
   () => generalPhotos.value.length + checklist.value.reduce((n, i) => n + i.foto.length, 0),
@@ -202,7 +205,7 @@ async function onSubmit() {
   saving.value = true
   try {
     const draft: SopralluogoDraft = {
-      id: isEdit.value ? (route.params.id as string) : undefined,
+      id: isEdit.value ? (route.params.id as string) : retryId.value,
       fields: {
         cantiere: cantiereId.value || undefined,
         azienda: trimmedAzienda,
@@ -217,8 +220,10 @@ async function onSubmit() {
       generalPhotos: generalPhotos.value,
     }
     await store.save(draft)
+    retryId.value = undefined
     router.push('/sopralluoghi')
-  } catch {
+  } catch (e) {
+    if (e instanceof SopralluogoSaveError) retryId.value = e.recordId
     saveError.value = t('sopralluoghi.saveError')
   } finally {
     saving.value = false

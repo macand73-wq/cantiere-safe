@@ -59,21 +59,35 @@ describe('upload filename mapping', () => {
     expect(uploadName('c_7')).toBe('c_7.jpg')
   })
 
-  it('maps server filenames back to client ids by their prefix', () => {
+  it('maps server filenames back to client ids by their base', () => {
     const returned = ['c_7_49w3y0vaxd.jpg', 'c_9_abcdef0123.jpg', 'kept_existing.jpg']
     const map = matchUploadedFilenames(returned, ['c_7', 'c_9'])
     expect(map.get('c_7')).toBe('c_7_49w3y0vaxd.jpg')
     expect(map.get('c_9')).toBe('c_9_abcdef0123.jpg')
     expect(map.size).toBe(2)
   })
+
+  it('matches by exact base, not by a shared short prefix', () => {
+    // A stale filename whose base is a short prefix of a real token must not be
+    // matched to that token.
+    const returned = ['p0000000003_gg55hh66ii.jpg', 'tok1_aaaaaaaaaa.jpg']
+    const map = matchUploadedFilenames(returned, ['tok1'])
+    expect(map.get('tok1')).toBe('tok1_aaaaaaaaaa.jpg')
+    expect(map.size).toBe(1)
+  })
 })
 
 describe('nextClientId', () => {
-  it('produces fixed-width ids so none is a prefix of another', () => {
-    const a = nextClientId()
-    const b = nextClientId()
-    expect(a.length).toBe(b.length)
-    expect(a.length).toBeGreaterThanOrEqual(3)
-    expect(b.startsWith(a)).toBe(false)
+  it('produces unique tokens that never collide with stale counter-based filenames', () => {
+    // Simulates a second session: the old ids were a resettable counter, so a
+    // fresh session could recycle a base that a persisted filename still used.
+    const staleBases = ['p0000000001', 'p0000000002', 'p0000000003']
+    const seen = new Set<string>()
+    for (let i = 0; i < 50; i += 1) {
+      const token = nextClientId()
+      seen.add(token)
+      expect(staleBases).not.toContain(token)
+    }
+    expect(seen.size).toBe(50)
   })
 })
