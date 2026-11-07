@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCantieriStore } from '../stores/cantieri'
@@ -29,16 +28,19 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const store = useCantieriStore()
-const { loading } = storeToRefs(store)
 
 const isEdit = computed(() => typeof route.params.id === 'string')
 const initial = ref<CantiereInput | undefined>(undefined)
+// Local to the load phase only: the store's shared `loading` also flips during
+// save, which would unmount the form and drop the user's typed input on failure.
+const loading = ref(false)
 const loadError = ref('')
 const saveError = ref('')
 const saving = ref(false)
 
 onMounted(async () => {
   if (!isEdit.value) return
+  loading.value = true
   try {
     await store.load()
     const found = store.items.find((c) => c.id === route.params.id)
@@ -49,6 +51,8 @@ onMounted(async () => {
     initial.value = found
   } catch {
     loadError.value = t('cantieri.loadError')
+  } finally {
+    loading.value = false
   }
 })
 
