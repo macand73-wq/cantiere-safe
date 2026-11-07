@@ -31,5 +31,42 @@
     "registerFailed": "Registrazione non riuscita. Riprova.",
     "resetFailed": "Impossibile inviare l'email di reimpostazione. Riprova.",
     "resetSent": "Se esiste un account per questo indirizzo, è stata inviata un'email di reimpostazione."
+  },
+  "nav": {
+    "home": "Home",
+    "cantieri": "Cantieri",
+    "logout": "Esci"
+  },
+  "common": {
+    "loading": "Caricamento..."
+  },
+  "cantieri": {
+    "title": "Cantieri",
+    "new": "Nuovo cantiere",
+    "newTitle": "Nuovo cantiere",
+    "editTitle": "Modifica cantiere",
+    "empty": "Nessun cantiere. Crea il primo.",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "deleteConfirm": "Eliminare questo cantiere?",
+    "nome": "Nome",
+    "indirizzo": "Indirizzo",
+    "comune": "Comune",
+    "committente": "Committente",
+    "impresaAffidataria": "Impresa affidataria",
+    "cse": "CSE",
+    "dl": "Direttore dei lavori",
+    "responsabileLavori": "Responsabile dei lavori",
+    "importo": "Importo",
+    "dataInizio": "Data inizio",
+    "dataFine": "Data fine",
+    "notificaPreliminare": "Notifica preliminare presentata",
+    "create": "Crea",
+    "save": "Salva",
+    "loadError": "Impossibile caricare i cantieri.",
+    "deleteError": "Impossibile eliminare il cantiere.",
+    "saveError": "Impossibile salvare il cantiere.",
+    "notFound": "Cantiere non trovato.",
+    "nomeRequired": "Il nome è obbligatorio."
   }
 }

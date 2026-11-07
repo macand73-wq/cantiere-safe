@@ -96,3 +96,131 @@ body {
 .auth-links a {
   color: var(--color-muted);
 }
+
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1rem 1rem;
+}
+
+.app-nav a,
+.app-nav button {
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+}
+
+.cantieri {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.cantieri-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.btn-new {
+  color: var(--color-accent);
+}
+
+.cantiere-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cantiere-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+}
+
+.cantiere-name {
+  font-weight: 600;
+}
+
+.cantiere-meta {
+  display: flex;
+  gap: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.cantiere-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.cantiere-actions a,
+.cantiere-actions button {
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.cantiere-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+}
+
+.cantiere-form label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.cantiere-form input[type='text'],
+.cantiere-form input[type='date'] {
+  padding: 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.cantiere-form button[type='submit'] {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cantiere-form button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cantiere-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cantiere-empty {
+  color: var(--color-muted);
+}

@@ -3,6 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ResetView from '../views/ResetView.vue'
+import CantiereListView from '../views/CantiereListView.vue'
+import CantiereFormView from '../views/CantiereFormView.vue'
 import { useAuthStore } from '../stores/auth'
 
 declare module 'vue-router' {
@@ -19,6 +21,9 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginView, meta: { guestOnly: true } },
     { path: '/register', name: 'register', component: RegisterView, meta: { guestOnly: true } },
     { path: '/reset', name: 'reset', component: ResetView, meta: { guestOnly: true } },
+    { path: '/cantieri', name: 'cantieri', component: CantiereListView, meta: { requiresAuth: true } },
+    { path: '/cantieri/new', name: 'cantieri-new', component: CantiereFormView, meta: { requiresAuth: true } },
+    { path: '/cantieri/:id/edit', name: 'cantieri-edit', component: CantiereFormView, meta: { requiresAuth: true } },
   ],
 })
 

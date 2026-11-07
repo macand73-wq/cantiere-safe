@@ -31,5 +31,42 @@
     "registerFailed": "Registration failed. Try again.",
     "resetFailed": "Could not send the reset email. Try again.",
     "resetSent": "If an account exists for this address, a reset email has been sent."
+  },
+  "nav": {
+    "home": "Home",
+    "cantieri": "Cantieri",
+    "logout": "Log out"
+  },
+  "common": {
+    "loading": "Loading..."
+  },
+  "cantieri": {
+    "title": "Cantieri",
+    "new": "New cantiere",
+    "newTitle": "New cantiere",
+    "editTitle": "Edit cantiere",
+    "empty": "No cantieri yet. Create the first one.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this cantiere?",
+    "nome": "Name",
+    "indirizzo": "Address",
+    "comune": "Municipality",
+    "committente": "Client",
+    "impresaAffidataria": "Contractor",
+    "cse": "CSE",
+    "dl": "Works director",
+    "responsabileLavori": "Works supervisor",
+    "importo": "Amount",
+    "dataInizio": "Start date",
+    "dataFine": "End date",
+    "notificaPreliminare": "Preliminary notice filed",
+    "create": "Create",
+    "save": "Save",
+    "loadError": "Could not load cantieri.",
+    "deleteError": "Could not delete the cantiere.",
+    "saveError": "Could not save the cantiere.",
+    "notFound": "Cantiere not found.",
+    "nomeRequired": "Name is required."
   }
 }

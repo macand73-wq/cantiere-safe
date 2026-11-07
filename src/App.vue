@@ -8,15 +8,29 @@
         <option value="it">{{ t('app.lang.it') }}</option>
       </select>
     </header>
+    <nav v-if="auth.user" class="app-nav">
+      <router-link to="/">{{ t('nav.home') }}</router-link>
+      <router-link to="/cantieri">{{ t('nav.cantieri') }}</router-link>
+      <button type="button" @click="onLogout">{{ t('nav.logout') }}</button>
+    </nav>
     <router-view />
   </div>
 </template>
 
 <script setup lang="ts">
 import { watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from './stores/auth'
 
 const { t, locale } = useI18n()
+const router = useRouter()
+const auth = useAuthStore()
+
+function onLogout() {
+  auth.logout()
+  router.push('/login')
+}
 
 watch(locale, (value) => localStorage.setItem('locale', value))
 </script>
