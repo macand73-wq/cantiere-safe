@@ -89,11 +89,19 @@ import {
 import { nextClientId, type PhotoDraft } from '../lib/photos'
 import {
   clearSopralluogoDraft,
+  DRAFT_MAX_AGE_MS,
   loadSopralluogoDraft,
+  mergePendingPhotos,
   saveSopralluogoDraft,
   serializeSopralluogoDraft,
   type SopralluogoDraftState,
 } from '../lib/draft'
+import {
+  clearPendingPhotos,
+  loadPendingPhotos,
+  prunePendingPhotos,
+  syncPendingPhotos,
+} from '../lib/photoDrafts'
 import type { Sopralluogo, ChecklistItem } from '../types'
 import PhotoField from '../components/photos/PhotoField.vue'
 import ChecklistSection from '../components/checklist/ChecklistSection.vue'
@@ -206,6 +214,7 @@ function applyDraft(state: SopralluogoDraftState) {
 
 function discardDraft() {
   clearSopralluogoDraft(draftContext.value)
+  void clearPendingPhotos(draftContext.value)
   draftNotice.value = false
   if (isEdit.value && loadedRecord.value) {
     populate(loadedRecord.value)
@@ -230,12 +239,20 @@ function currentState(): SopralluogoDraftState {
   }
 }
 
+// Every pending photo the form currently holds: general plus each item's.
+function allPhotos(): PhotoDraft[] {
+  return [...generalPhotos.value, ...checklist.value.flatMap((i) => i.foto)]
+}
+
 // Writes the draft only when it differs from the baseline (so a pristine form
-// is never persisted) and updates the baseline after a write.
+// is never persisted) and updates the baseline after a write. Pending photo
+// blobs are mirrored to IndexedDB fire-and-forget; never await inside the
+// debounce.
 function persistDraft() {
   const key = serializeSopralluogoDraft(currentState())
   if (key === baseline) return
   saveSopralluogoDraft(draftContext.value, currentState())
+  void syncPendingPhotos(draftContext.value, allPhotos())
   baseline = key
 }
 
@@ -271,6 +288,7 @@ watch(
 
 onMounted(async () => {
   loading.value = true
+  void prunePendingPhotos(DRAFT_MAX_AGE_MS)
   cantieriStore.load().catch(() => {}) // the cantiere select just stays empty
   try {
     if (isEdit.value) {
@@ -293,6 +311,7 @@ onMounted(async () => {
 
   const restored = loadSopralluogoDraft(draftContext.value)
   if (restored) {
+    mergePendingPhotos(restored, await loadPendingPhotos(draftContext.value))
     applyDraft(restored)
     draftNotice.value = true
   }
@@ -357,6 +376,7 @@ async function onSubmit() {
     await store.save(draft)
     retryId.value = undefined
     clearSopralluogoDraft(draftContext.value)
+    void clearPendingPhotos(draftContext.value)
     router.push('/sopralluoghi')
   } catch (e) {
     if (e instanceof SopralluogoSaveError) retryId.value = e.recordId

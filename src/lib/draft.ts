@@ -5,8 +5,10 @@
 //
 // Framework-free: no Vue, no PocketBase SDK. Only `localStorage` is touched.
 //
-// Pending `File` objects cannot be serialized, so they are dropped on save; a
-// restored draft keeps only already-persisted filenames (edit-mode photos).
+// Pending `File` bytes cannot be serialized, so a saved draft keeps only the
+// photo's clientId slot (plus already-persisted filenames for edit-mode photos).
+// The blobs live in IndexedDB (`lib/photoDrafts.ts`) and are re-attached on
+// restore via `mergePendingPhotos`.
 
 import type { ChecklistItemDraft, Luogo } from './checklist'
 import type { PhotoDraft } from './photos'
@@ -36,7 +38,7 @@ export function sopralluogoDraftKey(id: string): string {
 
 interface StoredPhoto {
   clientId: string
-  filename: string
+  filename?: string
 }
 
 interface StoredItem {
@@ -63,9 +65,10 @@ interface StoredState {
   generalPhotos: StoredPhoto[]
 }
 
-function normalizePhoto(p: PhotoDraft): StoredPhoto | null {
-  // A pending File has no filename yet and cannot be serialized: drop it.
-  return p.filename ? { clientId: p.clientId, filename: p.filename } : null
+function normalizePhoto(p: PhotoDraft): StoredPhoto {
+  // A pending File has no filename yet and its bytes cannot be serialized; keep
+  // the clientId slot so the IndexedDB blob can be re-attached on restore.
+  return p.filename ? { clientId: p.clientId, filename: p.filename } : { clientId: p.clientId }
 }
 
 function normalizeItem(item: ChecklistItemDraft): StoredItem {
@@ -77,7 +80,7 @@ function normalizeItem(item: ChecklistItemDraft): StoredItem {
     valore: item.valore,
     commento: item.commento,
     nascosta: item.nascosta,
-    foto: item.foto.map(normalizePhoto).filter((p): p is StoredPhoto => p !== null),
+    foto: item.foto.map(normalizePhoto),
   }
 }
 
@@ -92,9 +95,7 @@ function normalizeState(state: SopralluogoDraftState): StoredState {
     rischioGenerale: state.rischioGenerale,
     noteLibere: state.noteLibere,
     checklist: state.checklist.map(normalizeItem),
-    generalPhotos: state.generalPhotos
-      .map(normalizePhoto)
-      .filter((p): p is StoredPhoto => p !== null),
+    generalPhotos: state.generalPhotos.map(normalizePhoto),
   }
 }
 
@@ -126,11 +127,13 @@ function asLuogo(v: unknown): Luogo {
 function restorePhotos(v: unknown): PhotoDraft[] {
   if (!Array.isArray(v)) return []
   const out: PhotoDraft[] = []
+  const seen = new Set<string>()
   for (const raw of v) {
     if (typeof raw !== 'object' || raw === null) continue
     const { clientId, filename } = raw as { clientId?: unknown; filename?: unknown }
-    if (typeof clientId !== 'string' || typeof filename !== 'string') continue
-    out.push({ clientId, filename })
+    if (typeof clientId !== 'string' || seen.has(clientId)) continue
+    seen.add(clientId)
+    out.push(typeof filename === 'string' ? { clientId, filename } : { clientId })
   }
   return out
 }
@@ -194,4 +197,33 @@ export function loadSopralluogoDraft(
     checklist: restoreChecklist(s.checklist),
     generalPhotos: restorePhotos(s.generalPhotos),
   }
+}
+
+// Re-attaches pending blobs (recovered from IndexedDB) to the clientId slots a
+// restored draft keeps, dropping any slot that ends up with neither a file nor a
+// persisted filename. Mutates `state` in place and returns the count of photos
+// actually re-attached.
+export function mergePendingPhotos(
+  state: SopralluogoDraftState,
+  pending: ReadonlyArray<{ clientId: string; file: File }>,
+): number {
+  const byId = new Map(pending.map((p) => [p.clientId, p.file]))
+  let restored = 0
+  const merge = (list: PhotoDraft[]): PhotoDraft[] => {
+    const out: PhotoDraft[] = []
+    for (const p of list) {
+      const file = byId.get(p.clientId)
+      if (file) {
+        restored += 1
+        out.push({ clientId: p.clientId, file })
+      } else if (p.filename) {
+        out.push(p)
+      }
+      // else: a slot with no file and no filename -> drop it.
+    }
+    return out
+  }
+  state.generalPhotos = merge(state.generalPhotos)
+  for (const item of state.checklist) item.foto = merge(item.foto)
+  return restored
 }

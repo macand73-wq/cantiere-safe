@@ -18,8 +18,10 @@
     "vue-router": "^5.4.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/test-utils": "^2.5.1",
+    "fake-indexeddb": "^6.2.4",
     "happy-dom": "^21.0.4",
     "typescript": "^7.0.2",
     "vite": "^8.3.6",

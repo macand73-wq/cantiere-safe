@@ -5,6 +5,7 @@ import {
   clearSopralluogoDraft,
   sopralluogoDraftKey,
   serializeSopralluogoDraft,
+  mergePendingPhotos,
   DRAFT_MAX_AGE_MS,
   DRAFT_VERSION,
   type SopralluogoDraftState,
@@ -56,7 +57,7 @@ describe('draft persistence', () => {
     expect(restored?.generalPhotos).toEqual([{ clientId: 'g1', filename: 'g1_y.jpg' }])
   })
 
-  it('drops pending File entries (no filename) on round-trip', () => {
+  it('keeps the clientId slot but drops pending File bytes on round-trip', () => {
     const s = state()
     s.checklist[0].foto = [{ clientId: 'pending1', file: new File(['x'], 'x.jpg') }]
     s.generalPhotos = [{ clientId: 'pending2', file: new File(['y'], 'y.jpg') }]
@@ -64,8 +65,8 @@ describe('draft persistence', () => {
     saveSopralluogoDraft('rec1', s)
     const restored = loadSopralluogoDraft('rec1')
 
-    expect(restored?.checklist[0].foto).toEqual([])
-    expect(restored?.generalPhotos).toEqual([])
+    expect(restored?.checklist[0].foto).toEqual([{ clientId: 'pending1' }])
+    expect(restored?.generalPhotos).toEqual([{ clientId: 'pending2' }])
   })
 
   it('ignores malformed JSON', () => {
@@ -104,12 +105,37 @@ describe('draft persistence', () => {
     expect(loadSopralluogoDraft('rec1')).toBeNull()
   })
 
-  it('serializeSopralluogoDraft is stable and File-free', () => {
+  it('serializeSopralluogoDraft keeps the clientId slot but no File bytes', () => {
     const s = state()
     s.generalPhotos = [{ clientId: 'g1', file: new File(['x'], 'x.jpg') }]
     const a = serializeSopralluogoDraft(s)
-    const b = serializeSopralluogoDraft(state())
-    expect(a).toBe(b)
+    const parsed = JSON.parse(a)
+    expect(parsed.generalPhotos).toEqual([{ clientId: 'g1' }])
     expect(a).not.toContain('x.jpg')
+  })
+
+  it('mergePendingPhotos re-attaches blobs and drops empty slots', () => {
+    const s = state()
+    s.checklist[0].foto = [
+      { clientId: 'pending1' }, // slot to re-attach
+      { clientId: 'kept', filename: 'kept_x.jpg' },
+      { clientId: 'gone' }, // slot with no blob and no filename -> dropped
+    ]
+    s.generalPhotos = [{ clientId: 'g1' }, { clientId: 'g2', filename: 'g2_y.jpg' }]
+
+    const restored = mergePendingPhotos(s, [
+      { clientId: 'pending1', file: new File(['a'], 'a.jpg', { type: 'image/jpeg' }) },
+      { clientId: 'g1', file: new File(['b'], 'b.jpg', { type: 'image/jpeg' }) },
+    ])
+
+    expect(restored).toBe(2)
+    expect(s.checklist[0].foto).toEqual([
+      { clientId: 'pending1', file: expect.any(File) },
+      { clientId: 'kept', filename: 'kept_x.jpg' },
+    ])
+    expect(s.generalPhotos).toEqual([
+      { clientId: 'g1', file: expect.any(File) },
+      { clientId: 'g2', filename: 'g2_y.jpg' },
+    ])
   })
 })
