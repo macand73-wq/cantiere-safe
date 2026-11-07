@@ -212,14 +212,15 @@ export function mergePendingPhotos(
   const merge = (list: PhotoDraft[]): PhotoDraft[] => {
     const out: PhotoDraft[] = []
     for (const p of list) {
-      const file = byId.get(p.clientId)
-      if (file) {
+      // A persisted filename wins over any stale blob for the same clientId:
+      // the photo was already uploaded, so never re-attach a File over it.
+      if (p.filename) {
+        out.push({ clientId: p.clientId, filename: p.filename })
+      } else if (byId.get(p.clientId)) {
         restored += 1
-        out.push({ clientId: p.clientId, file })
-      } else if (p.filename) {
-        out.push(p)
+        out.push({ clientId: p.clientId, file: byId.get(p.clientId) })
       }
-      // else: a slot with no file and no filename -> drop it.
+      // else: a slot with no filename and no blob -> drop it.
     }
     return out
   }

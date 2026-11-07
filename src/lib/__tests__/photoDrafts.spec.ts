@@ -54,6 +54,13 @@ describe('photoDrafts', () => {
     expect((await loadPendingPhotos('fk1')).map((p) => p.clientId)).toEqual(['a'])
   })
 
+  it('sync deletes the blob once a photo becomes filename-only', async () => {
+    await syncPendingPhotos('tk1', [photo('a')])
+    await syncPendingPhotos('tk1', [{ clientId: 'a', filename: 'a_x.jpg' }])
+
+    expect(await loadPendingPhotos('tk1')).toEqual([])
+  })
+
   it('clear removes only the given draftKey', async () => {
     await syncPendingPhotos('ck1', [photo('a')])
     await syncPendingPhotos('ck2', [photo('b')])
@@ -62,6 +69,17 @@ describe('photoDrafts', () => {
 
     expect(await loadPendingPhotos('ck1')).toEqual([])
     expect((await loadPendingPhotos('ck2')).map((p) => p.clientId)).toEqual(['b'])
+  })
+
+  it('sync does not refresh savedAt for an unchanged blob', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000)
+    await syncPendingPhotos('sk1', [photo('a')])
+
+    now.mockReturnValue(1_000_000 + 10_000)
+    await syncPendingPhotos('sk1', [photo('a')]) // must skip put, keep savedAt
+
+    await prunePendingPhotos(5_000) // cutoff = 1_005_000
+    expect(await loadPendingPhotos('sk1')).toEqual([]) // still old -> pruned
   })
 
   it('prune removes records older than maxAgeMs', async () => {

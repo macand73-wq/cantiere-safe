@@ -138,4 +138,16 @@ describe('draft persistence', () => {
       { clientId: 'g2', filename: 'g2_y.jpg' },
     ])
   })
+
+  it('mergePendingPhotos prefers a persisted filename over a stale blob', () => {
+    const s = state()
+    s.generalPhotos = [{ clientId: 'g1', filename: 'g1_x.jpg' }]
+
+    const restored = mergePendingPhotos(s, [
+      { clientId: 'g1', file: new File(['stale'], 'g1.jpg', { type: 'image/jpeg' }) },
+    ])
+
+    expect(restored).toBe(0)
+    expect(s.generalPhotos).toEqual([{ clientId: 'g1', filename: 'g1_x.jpg' }])
+  })
 })

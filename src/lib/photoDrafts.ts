@@ -74,15 +74,21 @@ export async function syncPendingPhotos(
   try {
     const db = await openDb()
     try {
-      const present = new Set(photos.map((p) => p.clientId))
+      const byClientId = new Map(photos.map((p) => [p.clientId, p]))
       await mutateAll(db, draftKey, (recs, store) => {
-        // Drop records whose photo was removed from the form.
-        for (const rec of recs) if (!present.has(rec.clientId)) store.delete(rec.key)
-        // Put (or refresh) the blob for every photo that still carries a File.
-        // Filename-only photos are left untouched: nothing to store, nothing to
-        // delete.
+        const existing = new Map(recs.map((r) => [r.clientId, r]))
+        for (const rec of recs) {
+          const p = byClientId.get(rec.clientId)
+          // Remove the record when the photo left the form, or once it has been
+          // persisted (filename set, file cleared): a stale blob must never
+          // re-attach over a filename on restore.
+          if (!p || (p.filename && !p.file)) store.delete(rec.key)
+        }
         for (const p of photos) {
           if (!p.file) continue
+          // Blobs are immutable per clientId: keep the existing record (and its
+          // original savedAt) instead of re-writing it on every persist.
+          if (existing.has(p.clientId)) continue
           const record: StoredPhotoDraft = {
             key: `${draftKey}:${p.clientId}`,
             draftKey,
