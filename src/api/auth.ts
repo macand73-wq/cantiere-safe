@@ -1,4 +1,5 @@
-import { pb } from './client'
+import { pb, currentUserId } from './client'
+import type { RecordModel } from 'pocketbase'
 import type { Profile } from '../types'
 
 const USERS = 'users'
@@ -24,6 +25,15 @@ export async function register(input: RegisterInput): Promise<Profile> {
 
 export function logout(): void {
   pb.authStore.clear()
+}
+
+// Updates the signed-in user's own record. Refreshes the SDK auth-store record
+// with the returned profile so a later token refresh does not clobber the new
+// field values (the SDK overwrites the stored model from its own cache).
+export async function updateProfile(input: { recent_days: number }): Promise<Profile> {
+  const record = await pb.collection(USERS).update<Profile>(currentUserId(), input)
+  pb.authStore.save(pb.authStore.token, record as unknown as RecordModel)
+  return record
 }
 
 // Blocked on the project owner's Google credentials (no OAuth2 provider is

@@ -96,8 +96,12 @@ Read back from the running instance as superuser
 | `manageRule` | `null` | No client gets superuser-like auth-record management (changing another account's email or password). Separate from `authRule` and applied in addition to the create/update rules. |
 
 These are the PocketBase defaults for an auth collection, which is why there is
-no users-rules migration. The two custom fields `nome` and `studio` are added
-by `pb_migrations/1794038947_updated_users.js`.
+no users-rules migration. The custom fields `nome`, `studio` and `recent_days`
+are added by `pb_migrations/1794038947_updated_users.js` and
+`pb_migrations/1794053018_updated_users_recent_days.js`. `recent_days` is the
+per-account "recent inspections" window (number, `onlyInt`, min 1, max 365)
+that the Home dashboard uses; the client defaults to 30 when the field is
+unset.
 
 ### Signup
 

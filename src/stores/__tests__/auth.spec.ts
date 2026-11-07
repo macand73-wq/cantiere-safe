@@ -12,6 +12,7 @@ vi.mock('../../api/auth', () => ({
   onAuthChange: vi.fn(),
   loginWithGoogle: vi.fn(),
   resetPassword: vi.fn(),
+  updateProfile: vi.fn(),
 }))
 
 const profile: Profile = {
@@ -53,5 +54,27 @@ describe('auth store', () => {
 
     expect(store.user).toBeNull()
     expect(api.logout).toHaveBeenCalledOnce()
+  })
+
+  it('updateRecentDays saves through the API and sets the returned profile', async () => {
+    const updated = { ...profile, recent_days: 14 }
+    vi.mocked(api.updateProfile).mockResolvedValue(updated)
+
+    const store = useAuthStore()
+    store.user = profile
+    await store.updateRecentDays(14)
+
+    expect(api.updateProfile).toHaveBeenCalledWith({ recent_days: 14 })
+    expect(store.user).toEqual(updated)
+  })
+
+  it('updateRecentDays propagates a rejected save', async () => {
+    vi.mocked(api.updateProfile).mockRejectedValue(new Error('boom'))
+
+    const store = useAuthStore()
+    store.user = profile
+
+    await expect(store.updateRecentDays(14)).rejects.toThrow('boom')
+    expect(store.user).toEqual(profile)
   })
 })

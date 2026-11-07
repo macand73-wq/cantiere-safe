@@ -12,6 +12,7 @@
       <router-link to="/"><AppIcon name="home" />{{ t('nav.home') }}</router-link>
       <router-link to="/cantieri"><AppIcon name="cantieri" />{{ t('nav.cantieri') }}</router-link>
       <router-link to="/sopralluoghi"><AppIcon name="sopralluoghi" />{{ t('nav.sopralluoghi') }}</router-link>
+      <router-link to="/settings"><AppIcon name="settings" />{{ t('nav.settings') }}</router-link>
       <button type="button" @click="onLogout"><AppIcon name="logout" />{{ t('nav.logout') }}</button>
     </nav>
     <router-view />

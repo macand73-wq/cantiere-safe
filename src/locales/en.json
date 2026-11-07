@@ -36,7 +36,20 @@
     "home": "Home",
     "cantieri": "Cantieri",
     "sopralluoghi": "Inspections",
+    "settings": "Settings",
     "logout": "Log out"
+  },
+  "home": {
+    "recentTitle": "Recent inspections",
+    "recentEmpty": "No recent inspections."
+  },
+  "settings": {
+    "title": "Settings",
+    "recentDays": "Recent inspections (days)",
+    "save": "Save",
+    "saveSuccess": "Saved.",
+    "saveError": "Could not save settings.",
+    "rangeError": "Enter a whole number between 1 and 365."
   },
   "common": {
     "loading": "Loading..."

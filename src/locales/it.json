@@ -36,7 +36,20 @@
     "home": "Home",
     "cantieri": "Cantieri",
     "sopralluoghi": "Sopralluoghi",
+    "settings": "Impostazioni",
     "logout": "Esci"
+  },
+  "home": {
+    "recentTitle": "Sopralluoghi recenti",
+    "recentEmpty": "Nessun sopralluogo recente."
+  },
+  "settings": {
+    "title": "Impostazioni",
+    "recentDays": "Sopralluoghi recenti (giorni)",
+    "save": "Salva",
+    "saveSuccess": "Salvato.",
+    "saveError": "Impossibile salvare le impostazioni.",
+    "rangeError": "Inserisci un numero intero tra 1 e 365."
   },
   "common": {
     "loading": "Caricamento..."

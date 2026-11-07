@@ -22,6 +22,12 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
+  // Persists the per-account setting and mirrors the returned profile. Errors
+  // propagate to the caller so the view can surface them.
+  async function updateRecentDays(days: number): Promise<void> {
+    user.value = await api.updateProfile({ recent_days: days })
+  }
+
   // Restores a persisted session and keeps `user` in sync with the SDK store.
   function init(): void {
     user.value = api.currentUser()
@@ -30,5 +36,5 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  return { user, login, register, logout, init }
+  return { user, login, register, logout, init, updateRecentDays }
 })

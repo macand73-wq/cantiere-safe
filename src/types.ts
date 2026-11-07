@@ -9,6 +9,7 @@ export interface Profile {
   email: string
   nome?: string
   studio?: string
+  recent_days?: number
   verified: boolean
   created: string
   updated: string

@@ -30,6 +30,7 @@ type IconName =
   | 'trash'
   | 'download'
   | 'logout'
+  | 'settings'
 
 const props = defineProps<{ name: IconName }>()
 
@@ -57,6 +58,12 @@ const ICONS: Record<IconName, string[]> = {
     'M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3',
     'M16 17l5-5-5-5',
     'M21 12H9',
+  ],
+  settings: [
+    'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+    'M12 2v2M12 20v2M2 12h2M20 12h2',
+    'M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4',
+    'M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4',
   ],
 }
 
