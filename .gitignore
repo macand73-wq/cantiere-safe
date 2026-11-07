@@ -11,3 +11,6 @@ dist/
 
 # Local environment files
 .env*
+
+# dev.sh runtime state
+.run/
