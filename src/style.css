@@ -1,0 +1,27 @@
+:root {
+  color-scheme: dark;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #e2e8f0;
+  --color-muted: #94a3b8;
+  --color-accent: #f59e0b;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+}
+
+.app-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.app-header .brand {
+  font-weight: 700;
+  color: var(--color-accent);
+}
