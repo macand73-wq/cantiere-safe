@@ -2,7 +2,7 @@
   <main class="cantieri">
     <div class="cantieri-header">
       <h2>{{ t('cantieri.title') }}</h2>
-      <router-link class="btn-new" to="/cantieri/new">{{ t('cantieri.new') }}</router-link>
+      <router-link class="btn-new" to="/cantieri/new"><AppIcon name="plus" />{{ t('cantieri.new') }}</router-link>
     </div>
 
     <p v-if="loading" class="auth-message">{{ t('common.loading') }}</p>
@@ -17,6 +17,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useCantieriStore } from '../stores/cantieri'
 import CantiereList from '../components/cantiere/CantiereList.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const { t } = useI18n()
 const store = useCantieriStore()

@@ -38,6 +38,8 @@ vi.mock('vue-router', () => ({
 
 import { saveSopralluogo, SopralluogoSaveError } from '../../api/sopralluoghi'
 import { listCantieri } from '../../api/cantieri'
+import { cloneChecklist, checklistForLuogo } from '../../lib/checklist'
+import { saveSopralluogoDraft } from '../../lib/draft'
 import type { Sopralluogo } from '../../types'
 
 const i18n = createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en', messages: { en } })
@@ -68,6 +70,7 @@ function savedRecord(): Sopralluogo {
 
 describe('SopralluogoFormView', () => {
   beforeEach(() => {
+    localStorage.clear()
     vi.mocked(saveSopralluogo).mockReset()
     vi.mocked(listCantieri).mockReset()
     vi.mocked(listCantieri).mockResolvedValue([])
@@ -112,5 +115,55 @@ describe('SopralluogoFormView', () => {
     const second = vi.mocked(saveSopralluogo).mock.calls[1][0]
     expect(first.id).toBeUndefined()
     expect(second.id).toBe('rec1')
+  })
+
+  it('restores a saved draft on mount and shows the notice', async () => {
+    saveSopralluogoDraft('new', {
+      azienda: 'Bozza Azienda',
+      cantiereId: '',
+      indirizzo: '',
+      rspp: '',
+      luogo: 'cantiere',
+      data: '2026-11-07',
+      rischioGenerale: 'medio',
+      noteLibere: 'nota bozza',
+      checklist: cloneChecklist(checklistForLuogo('cantiere')),
+      generalPhotos: [],
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect((wrapper.find('#azienda').element as HTMLInputElement).value).toBe('Bozza Azienda')
+    expect((wrapper.find('#noteLibere').element as HTMLTextAreaElement).value).toBe('nota bozza')
+    expect(wrapper.text()).toContain('A saved draft was restored.')
+    wrapper.unmount()
+  })
+
+  it('discarding a draft clears storage and resets the form', async () => {
+    saveSopralluogoDraft('new', {
+      azienda: 'Bozza Azienda',
+      cantiereId: '',
+      indirizzo: '',
+      rspp: '',
+      luogo: 'cantiere',
+      data: '',
+      rischioGenerale: 'medio',
+      noteLibere: '',
+      checklist: cloneChecklist(checklistForLuogo('cantiere')),
+      generalPhotos: [],
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    const discard = wrapper.findAll('button').find((b) => b.text().includes('Discard draft'))
+    expect(discard).toBeDefined()
+    await discard!.trigger('click')
+    await flushPromises()
+
+    expect((wrapper.find('#azienda').element as HTMLInputElement).value).toBe('')
+    expect(localStorage.getItem('sopralluogo-draft:new')).toBeNull()
+    wrapper.unmount()
   })
 })

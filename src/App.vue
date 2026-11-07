@@ -9,10 +9,10 @@
       </select>
     </header>
     <nav v-if="auth.user" class="app-nav">
-      <router-link to="/">{{ t('nav.home') }}</router-link>
-      <router-link to="/cantieri">{{ t('nav.cantieri') }}</router-link>
-      <router-link to="/sopralluoghi">{{ t('nav.sopralluoghi') }}</router-link>
-      <button type="button" @click="onLogout">{{ t('nav.logout') }}</button>
+      <router-link to="/"><AppIcon name="home" />{{ t('nav.home') }}</router-link>
+      <router-link to="/cantieri"><AppIcon name="cantieri" />{{ t('nav.cantieri') }}</router-link>
+      <router-link to="/sopralluoghi"><AppIcon name="sopralluoghi" />{{ t('nav.sopralluoghi') }}</router-link>
+      <button type="button" @click="onLogout"><AppIcon name="logout" />{{ t('nav.logout') }}</button>
     </nav>
     <router-view />
   </div>
@@ -23,6 +23,7 @@ import { watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from './stores/auth'
+import AppIcon from './components/ui/AppIcon.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()

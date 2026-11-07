@@ -103,7 +103,10 @@
     "deleteError": "Could not delete the inspection.",
     "saveError": "Could not save the inspection.",
     "notFound": "Inspection not found.",
-    "luogoChangeConfirm": "Changing the location type discards the current checklist answers. Continue?"
+    "luogoChangeConfirm": "Changing the location type discards the current checklist answers. Continue?",
+    "draftRestored": "A saved draft was restored.",
+    "draftContinue": "Continue editing",
+    "draftDiscard": "Discard draft"
   },
   "checklist": {
     "yes": "Yes",

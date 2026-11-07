@@ -2,7 +2,7 @@
   <main class="cantieri">
     <div class="cantieri-header">
       <h2>{{ t('sopralluoghi.title') }}</h2>
-      <router-link class="btn-new" to="/sopralluoghi/new">{{ t('sopralluoghi.new') }}</router-link>
+      <router-link class="btn-new" to="/sopralluoghi/new"><AppIcon name="plus" />{{ t('sopralluoghi.new') }}</router-link>
     </div>
 
     <p v-if="loading" class="auth-message">{{ t('common.loading') }}</p>
@@ -18,8 +18,8 @@
           </div>
         </div>
         <div class="cantiere-actions">
-          <router-link :to="`/sopralluoghi/${s.id}/edit`">{{ t('sopralluoghi.edit') }}</router-link>
-          <button type="button" @click="onDelete(s.id)">{{ t('sopralluoghi.delete') }}</button>
+          <router-link :to="`/sopralluoghi/${s.id}/edit`"><AppIcon name="edit" />{{ t('sopralluoghi.edit') }}</router-link>
+          <button type="button" @click="onDelete(s.id)"><AppIcon name="trash" />{{ t('sopralluoghi.delete') }}</button>
           <ExportMenu :sopralluogo="s" />
         </div>
       </li>
@@ -35,6 +35,7 @@ import { useI18n } from 'vue-i18n'
 import { useSopralluoghiStore } from '../stores/sopralluoghi'
 import { useCantieriStore } from '../stores/cantieri'
 import ExportMenu from '../components/export/ExportMenu.vue'
+import AppIcon from '../components/ui/AppIcon.vue'
 
 const { t } = useI18n()
 const store = useSopralluoghiStore()

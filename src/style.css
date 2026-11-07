@@ -7,18 +7,44 @@
   --color-accent: #f59e0b;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
   font-family: system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .app-header {
   display: flex;
-  align-items: baseline;
-  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
   padding: 1rem;
+}
+
+.app-header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  overflow-wrap: anywhere;
 }
 
 .app-header .brand {
@@ -99,36 +125,59 @@ body {
 
 .app-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   padding: 0 1rem 1rem;
 }
 
 .app-nav a,
 .app-nav button {
-  color: var(--color-accent);
-  background: none;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
-  font-size: 1rem;
-  padding: 0;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.app-nav a.router-link-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
 }
 
 .cantieri {
   max-width: 40rem;
   margin: 0 auto;
   padding: 1rem;
+  width: 100%;
 }
 
 .cantieri-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem 1rem;
 }
 
 .btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 999px;
   color: var(--color-accent);
+  text-decoration: none;
 }
 
 .cantiere-list {
@@ -142,38 +191,54 @@ body {
 
 .cantiere-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   padding: 0.75rem 1rem;
   background: var(--color-surface);
   border-radius: 0.5rem;
+  min-width: 0;
+}
+
+.cantiere-row > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .cantiere-name {
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .cantiere-meta {
   display: flex;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   color: var(--color-muted);
   font-size: 0.875rem;
 }
 
 .cantiere-actions {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .cantiere-actions a,
 .cantiere-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
   color: var(--color-accent);
   background: none;
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
-  padding: 0;
+  padding: 0.25rem 0.5rem;
+  text-decoration: none;
 }
 
 .cantiere-form {
@@ -188,11 +253,13 @@ body {
 .cantiere-form label {
   color: var(--color-muted);
   font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .cantiere-form input[type='text'],
 .cantiere-form input[type='date'] {
-  padding: 0.5rem;
+  width: 100%;
+  padding: 0.6rem;
   border: 1px solid var(--color-muted);
   border-radius: 0.25rem;
   background: var(--color-bg);
@@ -201,7 +268,8 @@ body {
 
 .cantiere-form button[type='submit'] {
   margin-top: 0.5rem;
-  padding: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.6rem;
   border: none;
   border-radius: 0.25rem;
   background: var(--color-accent);
@@ -213,6 +281,12 @@ body {
 .cantiere-form button[type='submit']:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 40rem) {
+  .cantiere-form button[type='submit'] {
+    width: 100%;
+  }
 }
 
 .cantiere-check {
@@ -229,11 +303,17 @@ body {
 
 .cantiere-form select,
 .cantiere-form textarea {
-  padding: 0.5rem;
+  width: 100%;
+  padding: 0.6rem;
   border: 1px solid var(--color-muted);
   border-radius: 0.25rem;
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+.cantiere-form textarea {
+  min-height: 5rem;
+  resize: vertical;
 }
 
 .form-section-title {
@@ -262,13 +342,15 @@ body {
 
 .checklist-item-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
   align-items: flex-start;
 }
 
 .checklist-item-text {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .checklist-item-text input {
@@ -282,6 +364,7 @@ body {
 
 .checklist-item-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
   flex-shrink: 0;
@@ -289,7 +372,8 @@ body {
 
 .val-btn,
 .hide-btn {
-  padding: 0.2rem 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--color-muted);
   border-radius: 0.25rem;
   background: none;
@@ -374,4 +458,91 @@ body {
 .lightbox img {
   max-width: 90%;
   max-height: 90%;
+}
+
+/* ── Export menu ──────────────────────────────────────────────── */
+
+.export-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.export-menu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.export-menu button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Draft-restored notice ────────────────────────────────────── */
+
+.draft-notice {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.draft-notice p {
+  margin: 0 0 0.5rem;
+}
+
+.draft-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.draft-notice-actions button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.draft-notice-actions .draft-discard {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+/* ── Narrow screens ───────────────────────────────────────────── */
+
+@media (max-width: 40rem) {
+  .cantiere-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cantiere-actions {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-nav a,
+  .app-nav button,
+  .btn-new,
+  .cantiere-actions a,
+  .cantiere-actions button,
+  .export-menu button {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
 }

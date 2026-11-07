@@ -53,44 +53,78 @@ export function validateMagicBytes(file: File): Promise<boolean> {
 // Re-encodes to JPEG with a longest edge of 600px and quality 0.55, returning
 // a Blob (never a base64 string) for upload. Rejects when the browser cannot
 // decode the source (e.g. HEIC the current browser cannot render).
+//
+// Decodes via createImageBitmap (or an Image over an object URL as fallback)
+// rather than a base64 FileReader data URL, and encodes via canvas.toBlob
+// rather than toDataURL + atob: no full-resolution base64 string is ever held,
+// which is what pushed mobile tabs over the memory edge. `createImageBitmap` is
+// used without resize options because an aspect-correct 600px target needs the
+// source dimensions, which only exist after decode; the downscale happens on
+// the canvas instead.
 export function compressImage(file: File): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(new Error('read failed'))
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onerror = () => reject(new Error('unsupported image'))
-      img.onload = () => {
-        const MAX = 600
-        let w = img.width
-        let h = img.height
-        if (w > h) {
-          if (w > MAX) {
-            h = Math.round((h * MAX) / w)
-            w = MAX
-          }
-        } else if (h > MAX) {
-          w = Math.round((w * MAX) / h)
-          h = MAX
-        }
-        const canvas = document.createElement('canvas')
-        canvas.width = w
-        canvas.height = h
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return reject(new Error('no canvas'))
-        ctx.drawImage(img, 0, 0, w, h)
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.55)
-        const [header, body] = dataUrl.split(',')
-        const mime = header.match(/data:(.*?);/)?.[1] ?? 'image/jpeg'
-        const bin = atob(body)
-        const bytes = new Uint8Array(bin.length)
-        for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i)
-        resolve(new Blob([bytes], { type: mime }))
-      }
-      img.src = e.target?.result as string
+  return decode(file).then((source) => {
+    const MAX = 600
+    const scale = Math.min(1, MAX / Math.max(source.width, source.height))
+    const w = Math.max(1, Math.round(source.width * scale))
+    const h = Math.max(1, Math.round(source.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      source.close()
+      throw new Error('no canvas')
     }
-    reader.readAsDataURL(file)
+    ctx.drawImage(source.image, 0, 0, w, h)
+    source.close()
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('encode failed'))),
+        'image/jpeg',
+        0.55,
+      )
+    })
   })
+}
+
+interface DecodedSource {
+  image: ImageBitmap | HTMLImageElement
+  width: number
+  height: number
+  close: () => void
+}
+
+async function decode(file: File): Promise<DecodedSource> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file)
+      return {
+        image: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      }
+    } catch {
+      // Fall through to the Image path for sources the decoder rejects.
+    }
+  }
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onerror = () => reject(new Error('unsupported image'))
+      el.onload = () => resolve(el)
+      el.src = url
+    })
+    return {
+      image: img,
+      width: img.naturalWidth,
+      height: img.naturalHeight,
+      close: () => {},
+    }
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 // A photo as tracked by the form before save: exactly one of `file` (pending

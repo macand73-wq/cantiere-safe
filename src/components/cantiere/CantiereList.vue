@@ -9,9 +9,9 @@
         </div>
       </div>
       <div class="cantiere-actions">
-        <router-link :to="`/cantieri/${cantiere.id}/edit`">{{ t('cantieri.edit') }}</router-link>
+        <router-link :to="`/cantieri/${cantiere.id}/edit`"><AppIcon name="edit" />{{ t('cantieri.edit') }}</router-link>
         <button type="button" @click="emit('delete', cantiere.id)">
-          {{ t('cantieri.delete') }}
+          <AppIcon name="trash" />{{ t('cantieri.delete') }}
         </button>
       </div>
     </li>
@@ -22,6 +22,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { Cantiere } from '../../types'
+import AppIcon from '../ui/AppIcon.vue'
 
 defineProps<{ items: Cantiere[] }>()
 const emit = defineEmits<{ delete: [id: string] }>()

@@ -103,7 +103,10 @@
     "deleteError": "Impossibile eliminare il sopralluogo.",
     "saveError": "Impossibile salvare il sopralluogo.",
     "notFound": "Sopralluogo non trovato.",
-    "luogoChangeConfirm": "Cambiare il tipo di luogo elimina le risposte della checklist. Continuare?"
+    "luogoChangeConfirm": "Cambiare il tipo di luogo elimina le risposte della checklist. Continuare?",
+    "draftRestored": "È stata ripristinata una bozza salvata.",
+    "draftContinue": "Continua a modificare",
+    "draftDiscard": "Elimina bozza"
   },
   "checklist": {
     "yes": "Sì",

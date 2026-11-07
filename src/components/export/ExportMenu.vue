@@ -1,8 +1,8 @@
 <template>
   <div class="export-menu">
-    <button type="button" :disabled="busy" @click="onExport('pdf')">{{ t('export.pdf') }}</button>
-    <button type="button" :disabled="busy" @click="onExport('doc')">{{ t('export.doc') }}</button>
-    <button type="button" :disabled="busy" @click="onExport('txt')">{{ t('export.txt') }}</button>
+    <button type="button" :disabled="busy" @click="onExport('pdf')"><AppIcon name="download" />{{ t('export.pdf') }}</button>
+    <button type="button" :disabled="busy" @click="onExport('doc')"><AppIcon name="download" />{{ t('export.doc') }}</button>
+    <button type="button" :disabled="busy" @click="onExport('txt')"><AppIcon name="download" />{{ t('export.txt') }}</button>
     <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
   </div>
 </template>
@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n'
 import type { Sopralluogo } from '../../types'
 import { exportTxt, exportDoc, exportPdf, exportFilename } from '../../lib/export'
 import { photoUrl } from '../../api/sopralluoghi'
+import AppIcon from '../ui/AppIcon.vue'
 
 const props = defineProps<{ sopralluogo: Sopralluogo }>()
 
