@@ -255,5 +255,30 @@
     "tooLarge": "File troppo grande. Massimo 10 MB.",
     "invalidImage": "Il file non è un'immagine valida.",
     "compressError": "Impossibile elaborare l'immagine."
+  },
+  "export": {
+    "title": "VERBALE DI SOPRALLUOGO",
+    "subtitle": "Sopralluogo di sicurezza sul lavoro",
+    "tipo": "Tipo",
+    "nd": "N/D",
+    "summary": "RIEPILOGO",
+    "conformi": "CONFORMI",
+    "nonConformi": "NON CONFORMI",
+    "na": "N.A.",
+    "rischio": "RISCHIO",
+    "fotoAllegate": "foto allegate",
+    "fotoGenerali": "DOCUMENTAZIONE FOTOGRAFICA GENERALE",
+    "fotoNonDisponibili": "Foto non disponibili",
+    "firmaRspp": "Firma RSPP",
+    "firmaRespCantiere": "Firma Resp. Cantiere",
+    "puntoControllo": "Punto di controllo",
+    "esito": "Esito",
+    "generato": "Generato il",
+    "pagina": "Pagina",
+    "di": "di",
+    "pdf": "PDF",
+    "doc": "DOC",
+    "txt": "TXT",
+    "error": "Esportazione non riuscita."
   }
 }

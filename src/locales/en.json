@@ -255,5 +255,30 @@
     "tooLarge": "File too large. Maximum 10 MB.",
     "invalidImage": "The file is not a valid image.",
     "compressError": "Could not process the image."
+  },
+  "export": {
+    "title": "INSPECTION REPORT",
+    "subtitle": "Workplace safety inspection",
+    "tipo": "Type",
+    "nd": "n/a",
+    "summary": "SUMMARY",
+    "conformi": "COMPLIANT",
+    "nonConformi": "NON-COMPLIANT",
+    "na": "N/A",
+    "rischio": "RISK",
+    "fotoAllegate": "attached photos",
+    "fotoGenerali": "GENERAL PHOTO DOCUMENTATION",
+    "fotoNonDisponibili": "Photos not available",
+    "firmaRspp": "RSPP signature",
+    "firmaRespCantiere": "Site manager signature",
+    "puntoControllo": "Check point",
+    "esito": "Outcome",
+    "generato": "Generated on",
+    "pagina": "Page",
+    "di": "of",
+    "pdf": "PDF",
+    "doc": "DOC",
+    "txt": "TXT",
+    "error": "Export failed."
   }
 }

@@ -20,6 +20,7 @@
         <div class="cantiere-actions">
           <router-link :to="`/sopralluoghi/${s.id}/edit`">{{ t('sopralluoghi.edit') }}</router-link>
           <button type="button" @click="onDelete(s.id)">{{ t('sopralluoghi.delete') }}</button>
+          <ExportMenu :sopralluogo="s" />
         </div>
       </li>
     </ul>
@@ -33,6 +34,7 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { useSopralluoghiStore } from '../stores/sopralluoghi'
 import { useCantieriStore } from '../stores/cantieri'
+import ExportMenu from '../components/export/ExportMenu.vue'
 
 const { t } = useI18n()
 const store = useSopralluoghiStore()

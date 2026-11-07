@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
     "pinia": "^4.1.0",
     "pocketbase": "^0.28.2",
     "primevue": "^5.0.4",
