@@ -29,6 +29,9 @@ export interface SopralluogoDraftState {
   noteLibere: string
   checklist: ChecklistItemDraft[]
   generalPhotos: PhotoDraft[]
+  // Id of a partial record whose finalize failed; a reload must resume the
+  // save as an update, not create a duplicate.
+  retryId?: string
 }
 
 // Key per context: `sopralluogo-draft:new` for create, `...:<recordId>` for edit.
@@ -63,6 +66,7 @@ interface StoredState {
   noteLibere: string
   checklist: StoredItem[]
   generalPhotos: StoredPhoto[]
+  retryId?: string
 }
 
 function normalizePhoto(p: PhotoDraft): StoredPhoto {
@@ -96,6 +100,7 @@ function normalizeState(state: SopralluogoDraftState): StoredState {
     noteLibere: state.noteLibere,
     checklist: state.checklist.map(normalizeItem),
     generalPhotos: state.generalPhotos.map(normalizePhoto),
+    ...(state.retryId ? { retryId: state.retryId } : {}),
   }
 }
 
@@ -196,6 +201,7 @@ export function loadSopralluogoDraft(
     noteLibere: asString(s.noteLibere),
     checklist: restoreChecklist(s.checklist),
     generalPhotos: restorePhotos(s.generalPhotos),
+    ...(typeof s.retryId === 'string' ? { retryId: s.retryId } : {}),
   }
 }
 

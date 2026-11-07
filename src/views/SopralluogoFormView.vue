@@ -210,12 +210,16 @@ function applyDraft(state: SopralluogoDraftState) {
   noteLibere.value = state.noteLibere
   checklist.value = state.checklist
   generalPhotos.value = state.generalPhotos
+  retryId.value = state.retryId
 }
 
 function discardDraft() {
   clearSopralluogoDraft(draftContext.value)
   void clearPendingPhotos(draftContext.value)
   draftNotice.value = false
+  // A discarded draft is a fresh create: do not silently retarget a partial
+  // record that was abandoned.
+  retryId.value = undefined
   if (isEdit.value && loadedRecord.value) {
     populate(loadedRecord.value)
   } else {
@@ -236,6 +240,7 @@ function currentState(): SopralluogoDraftState {
     noteLibere: noteLibere.value,
     checklist: checklist.value,
     generalPhotos: generalPhotos.value,
+    retryId: retryId.value,
   }
 }
 

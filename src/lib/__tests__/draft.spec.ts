@@ -57,6 +57,21 @@ describe('draft persistence', () => {
     expect(restored?.generalPhotos).toEqual([{ clientId: 'g1', filename: 'g1_y.jpg' }])
   })
 
+  it('round-trips retryId', () => {
+    saveSopralluogoDraft('rec1', state({ retryId: 'rec1' }))
+    expect(loadSopralluogoDraft('rec1')?.retryId).toBe('rec1')
+  })
+
+  it('restores undefined retryId from an old payload without it', () => {
+    const s = state()
+    saveSopralluogoDraft('rec1', s)
+    const key = sopralluogoDraftKey('rec1')
+    const old = JSON.parse(localStorage.getItem(key) as string)
+    delete old.state.retryId // a v1 draft saved before retryId existed
+    localStorage.setItem(key, JSON.stringify(old))
+    expect(loadSopralluogoDraft('rec1')?.retryId).toBeUndefined()
+  })
+
   it('keeps the clientId slot but drops pending File bytes on round-trip', () => {
     const s = state()
     s.checklist[0].foto = [{ clientId: 'pending1', file: new File(['x'], 'x.jpg') }]

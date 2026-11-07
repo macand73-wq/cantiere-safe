@@ -140,6 +140,33 @@ describe('SopralluogoFormView', () => {
     wrapper.unmount()
   })
 
+  it('restores retryId and submits as an update, not a create', async () => {
+    vi.mocked(saveSopralluogo).mockResolvedValue(savedRecord())
+    saveSopralluogoDraft('new', {
+      azienda: 'Azienda Persa',
+      cantiereId: '',
+      indirizzo: '',
+      rspp: '',
+      luogo: 'cantiere',
+      data: '2026-11-07',
+      rischioGenerale: 'medio',
+      noteLibere: 'nota',
+      checklist: cloneChecklist(checklistForLuogo('cantiere')),
+      generalPhotos: [],
+      retryId: 'rec1',
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(saveSopralluogo).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(saveSopralluogo).mock.calls[0][0].id).toBe('rec1')
+    wrapper.unmount()
+  })
+
   it('discarding a draft clears storage and resets the form', async () => {
     saveSopralluogoDraft('new', {
       azienda: 'Bozza Azienda',
