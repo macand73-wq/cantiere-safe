@@ -1,2 +1,13 @@
 config.local.js
 dev-ca.crt
+
+# PocketBase runtime
+backend/pocketbase
+backend/pb_data/
+
+# Frontend build output and dependencies
+node_modules/
+dist/
+
+# Local environment files
+.env*
