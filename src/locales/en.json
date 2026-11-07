@@ -1,6 +1,11 @@
 {
   "app": {
     "title": "Workplace safety inspections",
-    "tagline": "Compile, document and export site safety inspections"
+    "tagline": "Compile, document and export site safety inspections",
+    "language": "Language",
+    "lang": {
+      "en": "English",
+      "it": "Italian"
+    }
   }
 }

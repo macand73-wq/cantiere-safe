@@ -1,6 +1,11 @@
 {
   "app": {
     "title": "Sopralluoghi di sicurezza sul lavoro",
-    "tagline": "Compila, documenta ed esporta i verbali di sicurezza in cantiere"
+    "tagline": "Compila, documenta ed esporta i verbali di sicurezza in cantiere",
+    "language": "Lingua",
+    "lang": {
+      "en": "Inglese",
+      "it": "Italiano"
+    }
   }
 }
