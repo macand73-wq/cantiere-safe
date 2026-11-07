@@ -5,6 +5,8 @@ import RegisterView from '../views/RegisterView.vue'
 import ResetView from '../views/ResetView.vue'
 import CantiereListView from '../views/CantiereListView.vue'
 import CantiereFormView from '../views/CantiereFormView.vue'
+import SopralluogoListView from '../views/SopralluogoListView.vue'
+import SopralluogoFormView from '../views/SopralluogoFormView.vue'
 import { useAuthStore } from '../stores/auth'
 
 declare module 'vue-router' {
@@ -24,6 +26,9 @@ const router = createRouter({
     { path: '/cantieri', name: 'cantieri', component: CantiereListView, meta: { requiresAuth: true } },
     { path: '/cantieri/new', name: 'cantieri-new', component: CantiereFormView, meta: { requiresAuth: true } },
     { path: '/cantieri/:id/edit', name: 'cantieri-edit', component: CantiereFormView, meta: { requiresAuth: true } },
+    { path: '/sopralluoghi', name: 'sopralluoghi', component: SopralluogoListView, meta: { requiresAuth: true } },
+    { path: '/sopralluoghi/new', name: 'sopralluoghi-new', component: SopralluogoFormView, meta: { requiresAuth: true } },
+    { path: '/sopralluoghi/:id/edit', name: 'sopralluoghi-edit', component: SopralluogoFormView, meta: { requiresAuth: true } },
   ],
 })
 

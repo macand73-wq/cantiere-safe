@@ -69,6 +69,9 @@ export interface ChecklistItem {
 export type CantiereInput = Partial<
   Omit<Cantiere, 'id' | 'user' | 'created' | 'updated'>
 >
-export type SopralluogoInput = Partial<
-  Omit<Sopralluogo, 'id' | 'user' | 'created' | 'updated'>
->
+// `foto` is widened to accept pending uploads (`File`/`Blob`) on create/update
+// alongside already-persisted filenames; reads always return filenames.
+export type SopralluogoInput = Omit<
+  Partial<Omit<Sopralluogo, 'id' | 'user' | 'created' | 'updated'>>,
+  'foto'
+> & { foto?: Array<string | File | Blob> }

@@ -11,6 +11,7 @@
     <nav v-if="auth.user" class="app-nav">
       <router-link to="/">{{ t('nav.home') }}</router-link>
       <router-link to="/cantieri">{{ t('nav.cantieri') }}</router-link>
+      <router-link to="/sopralluoghi">{{ t('nav.sopralluoghi') }}</router-link>
       <button type="button" @click="onLogout">{{ t('nav.logout') }}</button>
     </nav>
     <router-view />

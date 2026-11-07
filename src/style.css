@@ -224,3 +224,154 @@ body {
 .cantiere-empty {
   color: var(--color-muted);
 }
+
+/* ── Sopralluogo form ─────────────────────────────────────────── */
+
+.cantiere-form select,
+.cantiere-form textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.form-section-title {
+  margin: 0.75rem 0 0.25rem;
+}
+
+/* ── Checklist ────────────────────────────────────────────────── */
+
+.checklist-category {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+  color: var(--color-accent);
+}
+
+.checklist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.checklist-item.is-hidden {
+  opacity: 0.45;
+}
+
+.checklist-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.checklist-item-text {
+  flex: 1;
+}
+
+.checklist-item-text input {
+  width: 100%;
+  padding: 0.3rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.checklist-item-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.val-btn,
+.hide-btn {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.val-btn.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+
+.checklist-comment {
+  min-height: 2.5rem;
+  resize: vertical;
+}
+
+/* ── Photo field ──────────────────────────────────────────────── */
+
+.photo-thumbs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.photo-thumb {
+  position: relative;
+}
+
+.photo-thumb-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.photo-thumb-btn img {
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-muted);
+}
+
+.photo-remove {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  background: #f87171;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.photo-input {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  z-index: 10;
+}
+
+.lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+}
