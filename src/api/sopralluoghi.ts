@@ -5,6 +5,8 @@ import type { ChecklistItemDraft } from '../lib/checklist'
 
 const COLLECTION = 'sopralluoghi'
 
+// Per-user filtering is enforced server-side by PocketBase collection rules;
+// do not add a client-side filter here, it would silently hide records.
 export async function listSopralluoghi(): Promise<Sopralluogo[]> {
   return pb.collection(COLLECTION).getFullList<Sopralluogo>()
 }
@@ -85,6 +87,16 @@ export class SopralluogoSaveError extends Error {
 //  3. mutates the draft's pending photos into persisted filenames so a retry
 //     re-submits filenames (not the files), then finalizes the checklist refs.
 // A failed step 3 throws SopralluogoSaveError; retry resumes as an update.
+//
+// Known hard-crash window: step 1 persists the record with every file uploaded
+// but item `foto` refs empty, and only the finalize update (step 3) fills them.
+// This split exists because PocketBase appends a random suffix to each uploaded
+// filename, so item refs cannot be computed until the upload round-trip returns.
+// A hard failure between the two calls (tab close, device kill) leaves a record
+// whose photos live in `foto` with empty item refs, and on reload every photo is
+// reclassified as a general photo, losing which item it documented. It is not
+// solved here; a future fix is a draft/finalized marker on the record so an
+// incomplete save can be detected and re-finalized. See backend/README.md.
 export async function saveSopralluogo(draft: SopralluogoDraft): Promise<Sopralluogo> {
   const ordered = [...draft.generalPhotos, ...draft.checklist.flatMap((i) => i.foto)]
 
@@ -108,7 +120,10 @@ export async function saveSopralluogo(draft: SopralluogoDraft): Promise<Soprallu
 
   const resolved = matchUploadedFilenames(record.foto, newIds)
   for (const id of newIds) {
-    if (!resolved.has(id)) throw new Error('photo filename resolution failed')
+    // The record is already written by now, so this must carry the id too: a
+    // plain Error here would leave the form without retryId and a retry would
+    // create a duplicate instead of resuming as an update.
+    if (!resolved.has(id)) throw new SopralluogoSaveError('photo filename resolution failed', record.id)
   }
 
   // Mark the uploaded photos as persisted in place: these objects are shared

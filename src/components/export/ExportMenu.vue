@@ -27,6 +27,7 @@ type Format = 'pdf' | 'doc' | 'txt'
 async function resolveImage(filename: string): Promise<string> {
   const url = await photoUrl(props.sopralluogo.id, filename)
   const res = await fetch(url)
+  if (!res.ok) throw new Error(`photo fetch failed (${res.status})`)
   const blob = await res.blob()
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()

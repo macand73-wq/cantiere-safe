@@ -3,6 +3,8 @@ import type { Cantiere, CantiereInput } from '../types'
 
 const COLLECTION = 'cantieri'
 
+// Per-user filtering is enforced server-side by PocketBase collection rules;
+// do not add a client-side filter here, it would silently hide records.
 export async function listCantieri(): Promise<Cantiere[]> {
   return pb.collection(COLLECTION).getFullList<Cantiere>()
 }

@@ -223,7 +223,9 @@ export function exportDoc(s: Sopralluogo, t: Translator): string {
     }</p>`,
     `<p><b>${t('sopralluoghi.rischioGenerale')}:</b> ${escHtml(r.rischio)} &nbsp; <b>${
       r.summary[0].label
-    }:</b> ${r.summary[0].count} &nbsp; <b>${r.summary[1].label}:</b> ${r.summary[1].count}</p>`,
+    }:</b> ${r.summary[0].count} &nbsp; <b>${r.summary[1].label}:</b> ${r.summary[1].count} &nbsp; <b>${
+      r.summary[2].label
+    }:</b> ${r.summary[2].count}</p>`,
   ].join('')
 
   const notes = r.note.trim()

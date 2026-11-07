@@ -171,7 +171,23 @@ The same `user = @request.auth.id` pattern isolates `cantieri` and
 migration). The client should still filter by the signed-in user id for
 clarity, but the rules are the security boundary.
 
-### Google OAuth2 (blocked on owner credentials)
+### Known limitation: two-step photo save
+
+Saving a sopralluogo with photos is a two-step operation: the first request
+creates (or updates) the record and uploads all the photo files, but leaves the
+per-item `foto` references empty; a second request finalizes those references
+once the upload round-trip has returned the server-assigned filenames. The split
+is unavoidable today because PocketBase appends a random suffix to each uploaded
+filename, so the item references cannot be computed before the upload completes.
+
+A hard failure between the two requests (tab close, device kill, process
+termination) leaves a record with its photos stored in the record-level `foto`
+field but empty per-item references. On reload those photos are reclassified as
+general photos, losing which checklist item each one documented. This is a known
+residual risk, not a solved problem; a future fix would add a draft/finalized
+marker to the record so an incomplete save can be detected and re-finalized.
+
+## Google OAuth2 (blocked on owner credentials)
 
 **Status: not configured and not verified.** Registering the Google app needs
 the project owner's Google account. No client id or secret is committed, and a
