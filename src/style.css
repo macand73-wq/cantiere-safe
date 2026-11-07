@@ -1,0 +1,577 @@
+:root {
+  color-scheme: dark;
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text: #e2e8f0;
+  --color-muted: #94a3b8;
+  --color-accent: #f59e0b;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 1rem;
+}
+
+.app-header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  overflow-wrap: anywhere;
+}
+
+.app-header .brand {
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.auth {
+  max-width: 24rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+}
+
+.auth-form label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.auth-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.auth-form button,
+.auth-google {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-google {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.auth-form button:disabled,
+.auth-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #f87171;
+}
+
+.auth-message {
+  color: var(--color-accent);
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.auth-links a {
+  color: var(--color-muted);
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.app-nav a,
+.app-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.app-nav a.router-link-active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.cantieri {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+  width: 100%;
+}
+
+.cantieri-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.btn-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 999px;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.cantiere-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cantiere-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+  min-width: 0;
+}
+
+.cantiere-row > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cantiere-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.cantiere-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.cantiere-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cantiere-actions a,
+.cantiere-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  color: var(--color-accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  text-decoration: none;
+}
+
+.cantiere-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+}
+
+.cantiere-form label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.cantiere-form input[type='text'],
+.cantiere-form input[type='date'] {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.cantiere-form button[type='submit'] {
+  margin-top: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cantiere-form button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 40rem) {
+  .cantiere-form button[type='submit'] {
+    width: 100%;
+  }
+}
+
+.cantiere-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cantiere-empty {
+  color: var(--color-muted);
+}
+
+/* ── Home dashboard ──────────────────────────────────────────── */
+
+.home {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+  width: 100%;
+}
+
+.home-tagline {
+  color: var(--color-muted);
+  margin: 0 0 1rem;
+}
+
+.home-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.home-recent-title {
+  margin: 0 0 0.5rem;
+}
+
+.settings-success {
+  color: #4ade80;
+}
+
+/* ── Sopralluogo form ─────────────────────────────────────────── */
+
+.cantiere-form select,
+.cantiere-form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.cantiere-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.form-section-title {
+  margin: 0.75rem 0 0.25rem;
+}
+
+/* ── Checklist ────────────────────────────────────────────────── */
+
+.checklist-category {
+  margin: 1rem 0 0.5rem;
+  font-size: 1rem;
+  color: var(--color-accent);
+}
+
+.checklist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.checklist-item.is-hidden {
+  opacity: 0.45;
+}
+
+.checklist-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.checklist-item-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.checklist-item-text input {
+  width: 100%;
+  padding: 0.3rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.checklist-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.val-btn,
+.hide-btn {
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.val-btn.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+
+.checklist-comment {
+  min-height: 2.5rem;
+  resize: vertical;
+}
+
+/* ── Photo field ──────────────────────────────────────────────── */
+
+.photo-thumbs {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.photo-thumb {
+  position: relative;
+}
+
+.photo-thumb-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.photo-thumb-btn img {
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-muted);
+}
+
+.photo-remove {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: none;
+  border-radius: 50%;
+  background: #f87171;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.photo-input {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  z-index: 10;
+}
+
+.lightbox img {
+  max-width: 90%;
+  max-height: 90%;
+}
+
+/* ── Export menu ──────────────────────────────────────────────── */
+
+.export-menu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.export-menu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.export-menu button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Draft-restored notice ────────────────────────────────────── */
+
+.draft-notice {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+
+.draft-notice p {
+  margin: 0 0 0.5rem;
+}
+
+.draft-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.draft-notice-actions button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.draft-notice-actions .draft-discard {
+  color: #f87171;
+  border-color: #f87171;
+}
+
+/* ── Narrow screens ───────────────────────────────────────────── */
+
+@media (max-width: 40rem) {
+  .cantiere-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cantiere-actions {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-nav a,
+  .app-nav button,
+  .btn-new,
+  .cantiere-actions a,
+  .cantiere-actions button,
+  .export-menu button {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+}
