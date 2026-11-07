@@ -92,8 +92,8 @@ Read back from the running instance as superuser
 | `viewRule` | `id = @request.auth.id` | A user reads only their own record. |
 | `updateRule` | `id = @request.auth.id` | A user updates only their own record. |
 | `deleteRule` | `id = @request.auth.id` | A user deletes only their own record. |
-| `authRule` | `""` | No client-side auth-record management (email or password changes for other accounts); superusers only. |
-| `manageRule` | `null` | Legacy alias of `authRule`, also unset. |
+| `authRule` | `""` | Unrestricted: evaluated before authentication, empty means any account may authenticate. It adds no constraint; it is not a record-management rule. |
+| `manageRule` | `null` | No client gets superuser-like auth-record management (changing another account's email or password). Separate from `authRule` and applied in addition to the create/update rules. |
 
 These are the PocketBase defaults for an auth collection, which is why there is
 no users-rules migration. The two custom fields `nome` and `studio` are added
