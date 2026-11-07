@@ -1,70 +1,88 @@
 import { describe, it, expect } from 'vitest'
 import { recentInspections } from '../recent'
 
-const NOW = new Date('2026-11-07T12:00:00')
-
-function isoDaysAgo(days: number): string {
-  return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
-}
+// Local noon, fixed so the tests are timezone-independent.
+const NOW = new Date(2026, 10, 7, 12, 0, 0) // 2026-11-07 12:00 local
 
 interface Row {
   id: string
   data?: string
+  created?: string
 }
 
 describe('recentInspections', () => {
-  it('returns only items within N days, newest first', () => {
+  it('parses the real PocketBase space-separated datetime format', () => {
     const items: Row[] = [
-      { id: 'old', data: isoDaysAgo(10) },
-      { id: 'mid', data: isoDaysAgo(3) },
-      { id: 'new', data: isoDaysAgo(1) },
+      { id: 'pb', data: '2026-11-07 00:00:00.000Z' },
+      { id: 'old', data: '2026-10-20 00:00:00.000Z' },
     ]
 
-    const result = recentInspections(items, 7, NOW)
+    expect(recentInspections(items, 7, NOW).map((r) => r.id)).toEqual(['pb'])
+  })
+
+  it('returns only items within N days, newest first', () => {
+    const items: Row[] = [
+      { id: 'old', data: '2026-11-03' },
+      { id: 'mid', data: '2026-11-06' },
+      { id: 'new', data: '2026-11-07' },
+    ]
+
+    const result = recentInspections(items, 3, NOW)
 
     expect(result.map((r) => r.id)).toEqual(['new', 'mid'])
   })
 
-  it('includes a record exactly N days ago (inclusive boundary)', () => {
-    const items: Row[] = [{ id: 'edge', data: isoDaysAgo(5) }]
-
-    expect(recentInspections(items, 5, NOW).map((r) => r.id)).toEqual(['edge'])
-  })
-
-  it('excludes a record just past N days', () => {
-    const items: Row[] = [{ id: 'past', data: isoDaysAgo(6) }]
-
-    expect(recentInspections(items, 5, NOW)).toEqual([])
-  })
-
-  it('accepts date-only YYYY-MM-DD and ISO datetime strings', () => {
+  it('includes a record exactly N calendar days ago (UTC midnight), excludes N+1', () => {
     const items: Row[] = [
-      { id: 'dateOnly', data: '2026-11-07' },
-      { id: 'iso', data: '2026-11-07T09:00:00' },
+      { id: 'edge', data: '2026-11-05 00:00:00.000Z' },
+      { id: 'past', data: '2026-11-04 00:00:00.000Z' },
     ]
 
-    const result = recentInspections(items, 7, NOW)
-
-    expect(result.map((r) => r.id).sort()).toEqual(['dateOnly', 'iso'])
+    expect(recentInspections(items, 2, NOW).map((r) => r.id)).toEqual(['edge'])
   })
 
-  it('excludes missing or invalid dates', () => {
+  it('excludes missing, empty and invalid dates', () => {
     const items: Row[] = [
       { id: 'missing' },
       { id: 'empty', data: '' },
       { id: 'garbage', data: 'not-a-date' },
-      { id: 'ok', data: isoDaysAgo(1) },
+      { id: 'impossible', data: '2026-02-30' },
+      { id: 'ok', data: '2026-11-07' },
     ]
 
-    const result = recentInspections(items, 7, NOW)
+    expect(recentInspections(items, 7, NOW).map((r) => r.id)).toEqual(['ok'])
+  })
 
-    expect(result.map((r) => r.id)).toEqual(['ok'])
+  it('sorts mixed date-only and datetime strings newest first', () => {
+    const items: Row[] = [
+      { id: 'dateOnly', data: '2026-11-06' },
+      { id: 'isoT', data: '2026-11-07T09:00:00' },
+      { id: 'space', data: '2026-11-05 23:59:59.000Z' },
+    ]
+
+    expect(recentInspections(items, 7, NOW).map((r) => r.id)).toEqual([
+      'isoT',
+      'dateOnly',
+      'space',
+    ])
+  })
+
+  it('breaks equal dates by created descending', () => {
+    const items: Row[] = [
+      { id: 'early', data: '2026-11-07', created: '2026-11-07 08:00:00.000Z' },
+      { id: 'late', data: '2026-11-07', created: '2026-11-07 18:00:00.000Z' },
+    ]
+
+    expect(recentInspections(items, 7, NOW).map((r) => r.id)).toEqual([
+      'late',
+      'early',
+    ])
   })
 
   it('does not mutate the input array', () => {
     const items: Row[] = [
-      { id: 'new', data: isoDaysAgo(1) },
-      { id: 'old', data: isoDaysAgo(9) },
+      { id: 'new', data: '2026-11-07' },
+      { id: 'old', data: '2026-10-01' },
     ]
     const before = [...items]
 
