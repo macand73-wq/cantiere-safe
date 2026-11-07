@@ -1,85 +1,69 @@
 # CantiereSafe
 
-PWA per sopralluoghi di sicurezza sul lavoro, pensata per RSPP e tecnici della
-sicurezza. Permette di compilare in cantiere un verbale di ispezione completo di
-checklist, note vocali e documentazione fotografica, e di esportarlo in PDF, Word o
-testo. Riferimento normativo: D.Lgs. 81/2008.
+Offline-capable PWA for workplace-safety inspections (sopralluoghi) under
+D.Lgs. 81/2008, aimed at Italian RSPP officers and safety technicians. It
+records the site, the checklist answers, comments and photos, and exports the
+report as PDF, Word or plain text.
 
-L'applicazione è in italiano.
+The user interface is bilingual (English source locale, full Italian
+translation); the inspection content is Italian by nature.
 
-## Cosa fa
+## Stack
 
-- **Sopralluoghi.** Anagrafica del luogo ispezionato (azienda, cantiere, indirizzo,
-  data, RSPP), note libere, valutazione finale del rischio.
-- **Checklist dinamiche.** Tre modelli predefiniti, selezionati in base al tipo di
-  luogo (cantiere, azienda, edificio), organizzati per categoria: DPI, lavori in
-  quota, macchine, impianto elettrico, emergenza, ordine, documenti. Ogni voce si
-  segna come conforme (SI), non conforme (NO) o non applicabile (N.A.), accetta un
-  commento e delle foto, e può essere nascosta se non pertinente. Ogni categoria ha
-  una voce libera per aggiungere controlli non previsti.
-- **Foto.** Acquisizione dalla galleria o dalla fotocamera, compressione automatica
-  lato client, anteprima a tutto schermo. Foto generali del sopralluogo e foto
-  agganciate alla singola voce di checklist.
-- **Dettatura vocale.** Note dettate a voce tramite Web Speech API, dove il browser
-  la supporta.
-- **Anagrafica cantieri.** Elenco dei cantieri con committente, impresa affidataria,
-  CSE, direttore lavori, responsabile lavori, importo, date e riferimento alla
-  notifica preliminare.
-- **Export.** Verbale in PDF impaginato, documento Word editabile, testo semplice, e
-  backup testuale di tutti i sopralluoghi.
-- **Offline-first.** Service worker con cache degli asset: l'app si apre e si usa
-  anche senza rete. Le chiamate al backend restano ovviamente online.
+- **Backend:** PocketBase 0.40.6 (single Go binary, SQLite, auth, per-user
+  collection rules, file storage). Schema lives in committed migrations under
+  `backend/pb_migrations/`.
+- **Frontend:** Vue 3 + Vite + TypeScript, Pinia, vue-i18n, PrimeVue 4
+  (unstyled), vite-plugin-pwa.
+- **Tests:** Vitest + @vue/test-utils + happy-dom.
+- **Export:** jsPDF for PDF, HTML for Word, plain text for TXT.
 
-## Come funziona
+The PocketBase SDK is imported only in `src/api/`. Framework-free logic
+(checklists, photo validation/compression, report building, draft storage)
+lives in `src/lib/` and is unit-tested.
 
-Applicazione a pagina singola in JavaScript vanilla, senza framework e senza bundler.
-`index.html` contiene tutte le viste come `div` statici; `app.js` le mostra e le
-nasconde alternando la classe `.active`. Non c'è routing via URL.
+## Quick start
 
-Il backend è [Supabase](https://supabase.com): autenticazione (email e password,
-Google OAuth, reset password) e database Postgres. I dati vengono letti e scritti
-direttamente dal browser tramite `supabase-js`; l'isolamento tra utenti è affidato
-alle policy RLS lato database.
+Requirements: Node 20+ and the PocketBase binary.
 
-Tre tabelle: `profiles` (dati dell'utente), `sopralluoghi` (il verbale, con checklist
-e foto salvate come JSON nella riga) e `cantieri` (l'anagrafica).
+```sh
+# one-time: PocketBase binary (not tracked in git)
+curl -sL -o /tmp/pb.zip \
+  https://github.com/pocketbase/pocketbase/releases/download/v0.40.6/pocketbase_0.40.6_linux_amd64.zip
+unzip -o /tmp/pb.zip -d backend
+./backend/pocketbase superuser create admin@example.org cantieresafe-dev-2026 --dir backend/pb_data
 
-Il PDF è generato nel browser con jsPDF. Sia jsPDF che supabase-js sono caricati da
-CDN con hash SRI.
-
-## Struttura
-
-```
-index.html      tutte le viste
-app.js          logica applicativa, divisa in sezioni da commenti banner
-style.css       tema scuro, custom properties su :root
-sw.js           service worker (cache-first, rete per le chiamate Supabase)
-manifest.json   manifest PWA
-build.js        build Netlify: inietta le chiavi Supabase in app.js
-netlify.toml    configurazione di deploy
+# daily
+./dev.sh start          # backend on 0.0.0.0:8090, frontend on 0.0.0.0:5173
+./dev.sh status         # pids, ports and the LAN URLs for phone testing
+./dev.sh stop
+./dev.sh restart backend
 ```
 
-## Sviluppo
+Logs and pid files live in `.run/` (ignored). See `backend/README.md` for the
+pinned version, schema notes, auth setup and the known save-path limitation.
 
-Non servono dipendenze né passi di build per lavorare in locale: basta servire la
-cartella con un qualsiasi web server statico.
+Phone testing: open the LAN app URL printed by `./dev.sh status` on the same
+network. A camera capture can make the mobile browser reload the page; the form
+recovers its text, answers and pending photos from a local draft.
 
+## Tests
+
+```sh
+npm test
+npx tsc --noEmit
+npm run build
 ```
-python3 -m http.server 8000
-```
 
-Per far funzionare login e salvataggio serve un progetto Supabase e la sostituzione
-dei due segnaposto in cima a `app.js` con URL e anon key del progetto.
+## Status
 
-> **Attenzione:** non eseguire `node build.js` in locale. Lo script riscrive `app.js`
-> sul posto sostituendo i segnaposto con le variabili d'ambiente, ed è pensato solo
-> per l'ambiente di build di Netlify.
+The rebuild from the former Supabase/vanilla-JS app is merged. Production
+deployment is not done yet: it waits on the owner's decision about the Hetzner
+server. Google OAuth is wired but unverified because no Google credentials are
+configured. Offline-first sync is a later phase.
 
-Il deploy è su Netlify: `node build.js` inietta `SUPABASE_URL` e `SUPABASE_ANON_KEY`
-dalle variabili d'ambiente, poi pubblica la root del repository.
-
-Le note tecniche per chi lavora al codice, incluso l'elenco dei problemi noti, sono in
-[AGENTS.md](AGENTS.md).
+Design and implementation record:
+`docs/superpowers/specs/` and `docs/superpowers/plans/`.
 
 ## Development Approach
 

@@ -1,6 +1,3 @@
-config.local.js
-dev-ca.crt
-
 # PocketBase runtime
 backend/pocketbase
 backend/pb_data/
