@@ -41,3 +41,9 @@ export async function resetPassword(email: string): Promise<void> {
 export function onAuthChange(cb: (profile: Profile | null) => void): () => void {
   return pb.authStore.onChange((_token, model) => cb(model as Profile | null))
 }
+
+// Reads the persisted session synchronously; null when unauthenticated or the
+// token is expired/invalid. The store treats null as logged out.
+export function currentUser(): Profile | null {
+  return pb.authStore.isValid ? (pb.authStore.model as unknown as Profile) : null
+}

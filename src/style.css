@@ -25,3 +25,74 @@ body {
   font-weight: 700;
   color: var(--color-accent);
 }
+
+.auth {
+  max-width: 24rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+}
+
+.auth-form label {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.auth-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--color-muted);
+  border-radius: 0.25rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.auth-form button,
+.auth-google {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  background: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-google {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.auth-form button:disabled,
+.auth-google:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #f87171;
+}
+
+.auth-message {
+  color: var(--color-accent);
+}
+
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.auth-links a {
+  color: var(--color-muted);
+}

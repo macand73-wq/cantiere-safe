@@ -7,5 +7,29 @@
       "en": "Inglese",
       "it": "Italiano"
     }
+  },
+  "auth": {
+    "loginTitle": "Accedi",
+    "registerTitle": "Crea account",
+    "resetTitle": "Reimposta password",
+    "email": "Email",
+    "password": "Password",
+    "passwordConfirm": "Conferma password",
+    "nome": "Nome",
+    "studio": "Studio",
+    "submitLogin": "Accedi",
+    "submitRegister": "Crea account",
+    "submitReset": "Invia link di reimpostazione",
+    "noAccount": "Non hai un account? Registrati",
+    "haveAccount": "Hai già un account? Accedi",
+    "forgot": "Password dimenticata?",
+    "backToLogin": "Torna all'accesso",
+    "google": "Continua con Google",
+    "googleError": "L'accesso con Google non è ancora configurato.",
+    "passwordMismatch": "Le password non corrispondono.",
+    "loginFailed": "Accesso non riuscito. Controlla le credenziali.",
+    "registerFailed": "Registrazione non riuscita. Riprova.",
+    "resetFailed": "Impossibile inviare l'email di reimpostazione. Riprova.",
+    "resetSent": "Se esiste un account per questo indirizzo, è stata inviata un'email di reimpostazione."
   }
 }
